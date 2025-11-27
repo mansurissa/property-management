@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IVR Socket Connection Test</title>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      #status {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 4px;
+      }
+      .connected {
+        background-color: #d4edda;
+        color: #155724;
+      }
+      .disconnected {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+      .connecting {
+        background-color: #fff3cd;
+        color: #856404;
+      }
+      #events {
+        height: 400px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        padding: 10px;
+        margin-top: 20px;
+        border-radius: 4px;
+      }
+      .event-item {
+        padding: 8px;
+        margin-bottom: 8px;
+        border-radius: 4px;
+        background-color: #f8f9fa;
+        border-left: 4px solid #6c757d;
+      }
+      .event-item.incoming-call {
+        border-left-color: #28a745;
+      }
+      .event-item.status-update {
+        border-left-color: #007bff;
+      }
+      pre {
+        white-space: pre-wrap;
+        margin: 8px 0 0 0;
+        padding: 8px;
+        background-color: #f1f1f1;
+        border-radius: 4px;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+      button {
+        padding: 8px 16px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #0069d9;
+      }
+      .controls {
+        margin: 16px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>IVR Socket Connection Test</h1>
+
+    <div id="status" class="connecting">Connecting to socket server...</div>
+
+    <div class="controls">
+      <button id="connectBtn">Connect</button>
+      <button id="disconnectBtn">Disconnect</button>
+      <button id="clearBtn">Clear Events</button>
+    </div>
+
+    <h2>Events Received:</h2>
+    <div id="events"></div>
+
+    <script>
+      // DOM elements
+      const statusEl = document.getElementById("status");
+      const eventsEl = document.getElementById("events");
+      const connectBtn = document.getElementById("connectBtn");
+      const disconnectBtn = document.getElementById("disconnectBtn");
+      const clearBtn = document.getElementById("clearBtn");
+
+      // Socket connection variable
+      let socket;
+
+      // Function to update status display
+      function updateStatus(isConnected, message) {
+        statusEl.textContent = message;
+        statusEl.className = isConnected ? "connected" : "disconnected";
+      }
+
+      // Function to add event to the display
+      function addEvent(eventName, data, className) {
+        const eventItem = document.createElement("div");
+        eventItem.className = `event-item ${className || ""}`;
+
+        const timestamp = new Date().toLocaleTimeString();
+        eventItem.innerHTML = `
+                <strong>${timestamp} - ${eventName}</strong>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+
+        eventsEl.prepend(eventItem);
+      }
+
+      // Function to initialize socket connection
+      function initializeSocket() {
+        // The production URL
+        const SOCKET_URL = "https://ivr.hdi.api.huzalabs.com";
+
+        // Update status
+        statusEl.className = "connecting";
+        statusEl.textContent = "Connecting to socket server...";
+
+        // Initialize socket with options
+        socket = io(SOCKET_URL, {
+          transports: ["websocket"],
+          reconnection: true,
+          reconnectionAttempts: 5,
+          reconnectionDelay: 1000,
+          timeout: 10000,
+        });
+
+        // Connection event handlers
+        socket.on("connect", () => {
+          updateStatus(
+            true,
+            `Connected to socket server. Socket ID: ${socket.id}`
+          );
+          addEvent("connect", { socketId: socket.id });
+        });
+
+        socket.on("connect_error", (error) => {
+          updateStatus(false, `Connection error: ${error.message}`);
+          addEvent("connect_error", { error: error.message });
+        });
+
+        socket.on("disconnect", (reason) => {
+          updateStatus(
+            false,
+            `Disconnected from socket server. Reason: ${reason}`
+          );
+          addEvent("disconnect", { reason });
+        });
+
+        socket.on("reconnect_attempt", (attemptNumber) => {
+          statusEl.className = "connecting";
+          statusEl.textContent = `Reconnection attempt #${attemptNumber}...`;
+          addEvent("reconnect_attempt", { attemptNumber });
+        });
+
+        // Business event handlers
+        socket.on("incoming_call", (data) => {
+          addEvent("incoming_call", data, "incoming-call");
+          console.log("Incoming call event:", data);
+        });
+        socket.on("ivr_call", (data) => {
+          addEvent("ivr_call", data, "ivr-call");
+          console.log("IVR call event:", data);
+        });
+
+        socket.on("call_status_update", (data) => {
+          addEvent("call_status_update", data, "status-update");
+          console.log("Call status update event:", data);
+        });
+
+        socket.on("user_login", (data) => {
+          addEvent("user_login", data, "user-login");
+          console.log("User login event:", data);
+        });
+
+        socket.on("user_fetched", (data) => {
+          addEvent("user_fetched", data, "user-fetched");
+          console.log("User fetched event:", data);
+        });
+
+
+        // Debug: Listen to all events
+        socket.onAny((eventName, ...args) => {
+          console.log("📡 Received event:", eventName, args);
+        });
+      }
+
+      // Button event handlers
+      connectBtn.addEventListener("click", () => {
+        if (socket && socket.connected) {
+          addEvent("info", { message: "Already connected" });
+          return;
+        }
+        initializeSocket();
+      });
+
+      disconnectBtn.addEventListener("click", () => {
+        if (socket) {
+          socket.disconnect();
+          addEvent("manual_disconnect", { message: "Manually disconnected" });
+        }
+      });
+
+      clearBtn.addEventListener("click", () => {
+        eventsEl.innerHTML = "";
+      });
+
+      // Initialize on page load
+      initializeSocket();
+    </script>
+  </body>
+</html>

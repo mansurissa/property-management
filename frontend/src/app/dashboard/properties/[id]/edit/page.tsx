@@ -1,0 +1,225 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { propertiesApi, Property, UpdatePropertyData } from '@/lib/api/properties';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { ArrowLeft } from 'lucide-react';
+import { toast } from 'sonner';
+
+const propertyTypes = [
+  { value: 'apartment', label: 'Apartment' },
+  { value: 'house', label: 'House' },
+  { value: 'commercial', label: 'Commercial' },
+  { value: 'other', label: 'Other' },
+];
+
+const rwandaCities = [
+  'Kigali',
+  'Butare',
+  'Gitarama',
+  'Ruhengeri',
+  'Gisenyi',
+  'Byumba',
+  'Cyangugu',
+  'Nyanza',
+  'Kibungo',
+  'Rwamagana',
+];
+
+export default function EditPropertyPage() {
+  const params = useParams();
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState<UpdatePropertyData>({
+    name: '',
+    type: '',
+    address: '',
+    city: '',
+    description: '',
+  });
+
+  useEffect(() => {
+    if (params.id) {
+      loadProperty(params.id as string);
+    }
+  }, [params.id]);
+
+  const loadProperty = async (id: string) => {
+    try {
+      const property = await propertiesApi.getById(id);
+      setFormData({
+        name: property.name,
+        type: property.type,
+        address: property.address,
+        city: property.city,
+        description: property.description || '',
+      });
+    } catch (err) {
+      toast.error('Failed to load property');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.name || !formData.address) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await propertiesApi.update(params.id as string, formData);
+      toast.success('Property updated successfully');
+      router.push(`/dashboard/properties/${params.id}`);
+    } catch (err) {
+      toast.error('Failed to update property');
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 w-10" />
+          <div>
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+        </div>
+        <Skeleton className="h-96 max-w-2xl" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" asChild>
+          <Link href={`/dashboard/properties/${params.id}`}>
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold">Edit Property</h1>
+          <p className="text-muted-foreground">
+            Update property details
+          </p>
+        </div>
+      </div>
+
+      <Card className="max-w-2xl">
+        <CardHeader>
+          <CardTitle>Property Details</CardTitle>
+          <CardDescription>
+            Update the details of your property
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Property Name *</Label>
+              <Input
+                id="name"
+                placeholder="e.g., Sunrise Apartments"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="type">Property Type</Label>
+              <Select
+                value={formData.type}
+                onValueChange={(value) => setFormData({ ...formData, type: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {propertyTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address">Address *</Label>
+              <Input
+                id="address"
+                placeholder="e.g., KG 123 St, Kimihurura"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="city">City</Label>
+              <Select
+                value={formData.city}
+                onValueChange={(value) => setFormData({ ...formData, city: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select city" />
+                </SelectTrigger>
+                <SelectContent>
+                  {rwandaCities.map((city) => (
+                    <SelectItem key={city} value={city}>
+                      {city}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                placeholder="Describe your property..."
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows={4}
+              />
+            </div>
+
+            <div className="flex gap-4 pt-4">
+              <Button type="submit" disabled={saving}>
+                {saving ? 'Saving...' : 'Save Changes'}
+              </Button>
+              <Button type="button" variant="outline" asChild>
+                <Link href={`/dashboard/properties/${params.id}`}>Cancel</Link>
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
