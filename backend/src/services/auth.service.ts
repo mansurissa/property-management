@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { generateToken } from '../utils/jwt.utils';
+import { generateTokenPair } from '../utils/jwt.utils';
+import { sendPasswordResetEmail } from './email.service';
 
 const db = require('../database/models');
 const { User } = db;
@@ -16,6 +17,8 @@ export interface AuthResponse {
   message: string;
   data?: {
     token: string;
+    refreshToken: string;
+    expiresIn: number;
     user: {
       id: string;
       email: string;
@@ -64,8 +67,8 @@ export const login = async (credentials: LoginCredentials): Promise<AuthResponse
       };
     }
 
-    // Generate JWT token
-    const token = generateToken({
+    // Generate JWT token pair
+    const tokens = generateTokenPair({
       userId: user.id,
       email: user.email,
       role: user.role
@@ -75,7 +78,9 @@ export const login = async (credentials: LoginCredentials): Promise<AuthResponse
       success: true,
       message: 'Login successful',
       data: {
-        token,
+        token: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresIn: tokens.expiresIn,
         user: {
           id: user.id,
           email: user.email,
@@ -123,8 +128,8 @@ export const createUser = async (userData: {
       role: userData.role || 'owner'
     });
 
-    // Generate JWT token
-    const token = generateToken({
+    // Generate JWT token pair
+    const tokens = generateTokenPair({
       userId: newUser.id,
       email: newUser.email,
       role: newUser.role
@@ -134,7 +139,9 @@ export const createUser = async (userData: {
       success: true,
       message: 'User created successfully',
       data: {
-        token,
+        token: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresIn: tokens.expiresIn,
         user: {
           id: newUser.id,
           email: newUser.email,
@@ -184,26 +191,17 @@ export const forgotPassword = async (email: string): Promise<PasswordResetRespon
       passwordResetExpires: resetExpires
     });
 
-    // In production, you would send an email here
-    // For now, we'll log the reset URL (only in development)
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+    // Send password reset email
+    const emailResult = await sendPasswordResetEmail(
+      user.email,
+      user.firstName,
+      resetToken
+    );
 
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('Password reset URL:', resetUrl);
+    if (!emailResult.success) {
+      console.error('Failed to send password reset email:', emailResult.message);
+      // Still return success to user for security (don't reveal email sending issues)
     }
-
-    // TODO: Send email with reset link
-    // await sendEmail({
-    //   to: user.email,
-    //   subject: 'Renta - Password Reset Request',
-    //   html: `
-    //     <p>Hi ${user.firstName || 'there'},</p>
-    //     <p>You requested to reset your password. Click the link below to set a new password:</p>
-    //     <a href="${resetUrl}">Reset Password</a>
-    //     <p>This link will expire in 1 hour.</p>
-    //     <p>If you didn't request this, please ignore this email.</p>
-    //   `
-    // });
 
     return {
       success: true,

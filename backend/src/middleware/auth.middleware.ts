@@ -133,3 +133,6 @@ export const authorizeAgencyOrOwner = authorizeRoles('agency', 'owner');
 export const authorizeOwnerOrManager = authorizeRoles('owner', 'manager');
 export const authorizeStaff = authorizeRoles('super_admin', 'agency', 'maintenance');
 export const authorizeAgentOrAdmin = authorizeRoles('super_admin', 'agent');
+
+// Alias for requireRole - more intuitive naming
+export const requireRole = (...roles: UserRole[]) => authorizeRoles(...roles);

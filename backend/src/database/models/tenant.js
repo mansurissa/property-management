@@ -68,6 +68,15 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATEONLY,
       allowNull: true
     },
+    rentDueDay: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 1,
+      validate: {
+        min: 1,
+        max: 28
+      }
+    },
     userAccountId: {
       type: DataTypes.UUID,
       allowNull: true,

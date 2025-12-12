@@ -10,13 +10,13 @@ router.use(authenticate);
 // GET /properties/:propertyId/units - List all units for a property
 router.get('/property/:propertyId', async (req: AuthRequest, res: Response) => {
   try {
-    // First verify the property belongs to the user
-    const property = await Property.findOne({
-      where: {
-        id: req.params.propertyId,
-        userId: req.user?.userId
-      }
-    });
+    // Build where clause - super_admin can access all properties
+    const whereClause: any = { id: req.params.propertyId };
+    if (req.user?.role !== 'super_admin') {
+      whereClause.userId = req.user?.userId;
+    }
+
+    const property = await Property.findOne({ where: whereClause });
 
     if (!property) {
       return res.status(404).json({
@@ -53,12 +53,18 @@ router.get('/property/:propertyId', async (req: AuthRequest, res: Response) => {
 // GET /units/:id - Get a single unit
 router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
+    // Build property where clause - super_admin can access all
+    const propertyWhere: any = {};
+    if (req.user?.role !== 'super_admin') {
+      propertyWhere.userId = req.user?.userId;
+    }
+
     const unit = await Unit.findByPk(req.params.id, {
       include: [
         {
           model: Property,
           as: 'property',
-          where: { userId: req.user?.userId },
+          where: propertyWhere,
           attributes: ['id', 'name', 'address']
         },
         {
@@ -101,13 +107,13 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Verify the property belongs to the user
-    const property = await Property.findOne({
-      where: {
-        id: propertyId,
-        userId: req.user?.userId
-      }
-    });
+    // Verify the property exists and user has access (super_admin can access all)
+    const propertyWhere: any = { id: propertyId };
+    if (req.user?.role !== 'super_admin') {
+      propertyWhere.userId = req.user?.userId;
+    }
+
+    const property = await Property.findOne({ where: propertyWhere });
 
     if (!property) {
       return res.status(404).json({
@@ -144,11 +150,17 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 // PUT /units/:id - Update a unit
 router.put('/:id', async (req: AuthRequest, res: Response) => {
   try {
+    // Build property where clause - super_admin can access all
+    const propertyWhere: any = {};
+    if (req.user?.role !== 'super_admin') {
+      propertyWhere.userId = req.user?.userId;
+    }
+
     const unit = await Unit.findByPk(req.params.id, {
       include: [{
         model: Property,
         as: 'property',
-        where: { userId: req.user?.userId }
+        where: propertyWhere
       }]
     });
 
@@ -188,11 +200,17 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 // DELETE /units/:id - Delete a unit
 router.delete('/:id', async (req: AuthRequest, res: Response) => {
   try {
+    // Build property where clause - super_admin can access all
+    const propertyWhere: any = {};
+    if (req.user?.role !== 'super_admin') {
+      propertyWhere.userId = req.user?.userId;
+    }
+
     const unit = await Unit.findByPk(req.params.id, {
       include: [{
         model: Property,
         as: 'property',
-        where: { userId: req.user?.userId }
+        where: propertyWhere
       }]
     });
 

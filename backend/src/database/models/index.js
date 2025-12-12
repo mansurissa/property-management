@@ -25,6 +25,10 @@ const AgentApplication = require('./agentApplication')(sequelize, DataTypes);
 const CommissionRule = require('./commissionRule')(sequelize, DataTypes);
 const AgentTransaction = require('./agentTransaction')(sequelize, DataTypes);
 const AgentCommission = require('./agentCommission')(sequelize, DataTypes);
+const AuditLog = require('./auditLog')(sequelize, DataTypes);
+const Document = require('./document')(sequelize, DataTypes);
+const Notification = require('./notification')(sequelize, DataTypes);
+const DemoRequest = require('./demoRequest')(sequelize, DataTypes);
 
 // Add models to db object
 db.User = User;
@@ -39,6 +43,10 @@ db.AgentApplication = AgentApplication;
 db.CommissionRule = CommissionRule;
 db.AgentTransaction = AgentTransaction;
 db.AgentCommission = AgentCommission;
+db.AuditLog = AuditLog;
+db.Document = Document;
+db.Notification = Notification;
+db.DemoRequest = DemoRequest;
 
 // Setup associations
 Object.keys(db).forEach(modelName => {
@@ -65,3 +73,7 @@ module.exports.AgentApplication = AgentApplication;
 module.exports.CommissionRule = CommissionRule;
 module.exports.AgentTransaction = AgentTransaction;
 module.exports.AgentCommission = AgentCommission;
+module.exports.AuditLog = AuditLog;
+module.exports.Document = Document;
+module.exports.Notification = Notification;
+module.exports.DemoRequest = DemoRequest;

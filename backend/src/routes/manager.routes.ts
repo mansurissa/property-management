@@ -1,5 +1,6 @@
 import { Router, Response } from 'express';
 import { authenticate, AuthRequest, authorizeOwner } from '../middleware/auth.middleware';
+import { sendManagerInvitationEmail } from '../services/email.service';
 const { Property, PropertyManager, User } = require('../database/models');
 
 const router = Router();
@@ -90,17 +91,34 @@ router.post('/properties/:propertyId/managers', async (req: AuthRequest, res: Re
       const bcrypt = require('bcrypt');
       const tempPassword = crypto.randomBytes(16).toString('hex');
       const hashedPassword = await bcrypt.hash(tempPassword, 10);
+      const resetToken = crypto.randomBytes(32).toString('hex');
 
       managerUser = await User.create({
         email,
         password: hashedPassword,
         role: 'manager',
         isActive: true,
-        passwordResetToken: crypto.randomBytes(32).toString('hex'),
+        passwordResetToken: crypto.createHash('sha256').update(resetToken).digest('hex'),
         passwordResetExpires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
       });
 
-      // TODO: Send invitation email with password reset link
+      // Get inviter's name for the email
+      const inviter = await User.findByPk(req.user?.userId);
+      const inviterName = inviter
+        ? `${inviter.firstName || ''} ${inviter.lastName || ''}`.trim() || inviter.email
+        : 'A property owner';
+
+      // Send invitation email with password reset link
+      const emailResult = await sendManagerInvitationEmail(
+        email,
+        inviterName,
+        property.name,
+        resetToken
+      );
+
+      if (!emailResult.success) {
+        console.error('Failed to send manager invitation email:', emailResult.message);
+      }
     } else if (managerUser.role !== 'manager') {
       return res.status(400).json({
         success: false,

@@ -748,12 +748,12 @@ router.post('/assist-tenant/:tenantId/payment', async (req: AuthRequest, res: Re
 router.post('/assist-tenant/:tenantId/maintenance', async (req: AuthRequest, res: Response) => {
   try {
     const { tenantId } = req.params;
-    const { title, description, category, priority } = req.body;
+    const { description, category, priority } = req.body;
 
-    if (!title || !description) {
+    if (!description) {
       return res.status(400).json({
         success: false,
-        message: 'Title and description are required'
+        message: 'Description is required'
       });
     }
 
@@ -774,13 +774,11 @@ router.post('/assist-tenant/:tenantId/maintenance', async (req: AuthRequest, res
     // Create maintenance ticket
     const ticket = await MaintenanceTicket.create({
       unitId: tenant.unitId,
-      title,
-      description,
+      tenantId: tenant.id,
+      description: description,
       category: category || 'other',
       priority: priority || 'medium',
-      status: 'open',
-      reportedBy: tenant.userAccountId,
-      performedByAgentId: req.user?.userId
+      status: 'pending'
     });
 
     // Record agent action
@@ -791,7 +789,7 @@ router.post('/assist-tenant/:tenantId/maintenance', async (req: AuthRequest, res
       targetTenantId: tenantId,
       relatedEntityType: 'MaintenanceTicket',
       relatedEntityId: ticket.id,
-      description: `Submitted maintenance request "${title}" for tenant ${tenant.firstName} ${tenant.lastName}`
+      description: `Submitted maintenance request for tenant ${tenant.firstName} ${tenant.lastName}`
     });
 
     return res.status(201).json({

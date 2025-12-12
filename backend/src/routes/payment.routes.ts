@@ -1,7 +1,9 @@
 import { Router, Response } from 'express';
 import { Op } from 'sequelize';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
-const { Payment, Tenant, Unit, Property } = require('../database/models');
+import { generateReceipt, generateReceiptText, generateReceiptPDF } from '../services/receipt.service';
+import { logAction } from '../services/audit.service';
+const { Payment, Tenant, Unit, Property, User } = require('../database/models');
 
 const router = Router();
 
@@ -9,16 +11,23 @@ const router = Router();
 router.use(authenticate);
 
 // GET /payments - List all payments with filters
+// Super admin can see all payments
 router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const { tenantId, unitId, periodMonth, periodYear, startDate, endDate } = req.query;
+
+    // Build tenant where clause - super_admin can access all
+    const tenantWhere: any = {};
+    if (req.user?.role !== 'super_admin') {
+      tenantWhere.userId = req.user?.userId;
+    }
 
     const whereClause: any = {};
     const includeClause: any[] = [
       {
         model: Tenant,
         as: 'tenant',
-        where: { userId: req.user?.userId },
+        where: tenantWhere,
         attributes: ['id', 'firstName', 'lastName', 'phone']
       },
       {
@@ -64,14 +73,21 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /payments/:id - Get a single payment
+// Super admin can view any payment
 router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
+    // Build tenant where clause - super_admin can access all
+    const tenantWhere: any = {};
+    if (req.user?.role !== 'super_admin') {
+      tenantWhere.userId = req.user?.userId;
+    }
+
     const payment = await Payment.findByPk(req.params.id, {
       include: [
         {
           model: Tenant,
           as: 'tenant',
-          where: { userId: req.user?.userId },
+          where: tenantWhere,
           attributes: ['id', 'firstName', 'lastName', 'phone', 'email']
         },
         {
@@ -119,13 +135,13 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Verify the tenant belongs to the user
-    const tenant = await Tenant.findOne({
-      where: {
-        id: tenantId,
-        userId: req.user?.userId
-      }
-    });
+    // Verify user has access to tenant (super_admin can access all)
+    const tenantWhere: any = { id: tenantId };
+    if (req.user?.role !== 'super_admin') {
+      tenantWhere.userId = req.user?.userId;
+    }
+
+    const tenant = await Tenant.findOne({ where: tenantWhere });
 
     if (!tenant) {
       return res.status(404).json({
@@ -134,12 +150,17 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Verify the unit belongs to the user
+    // Verify user has access to unit (super_admin can access all)
+    const propertyWhere: any = {};
+    if (req.user?.role !== 'super_admin') {
+      propertyWhere.userId = req.user?.userId;
+    }
+
     const unit = await Unit.findByPk(unitId, {
       include: [{
         model: Property,
         as: 'property',
-        where: { userId: req.user?.userId }
+        where: propertyWhere
       }]
     });
 
@@ -182,15 +203,16 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /tenants/:tenantId/payments - Get payment history for a tenant
+// Super admin can view any tenant's payments
 router.get('/tenant/:tenantId', async (req: AuthRequest, res: Response) => {
   try {
-    // Verify the tenant belongs to the user
-    const tenant = await Tenant.findOne({
-      where: {
-        id: req.params.tenantId,
-        userId: req.user?.userId
-      }
-    });
+    // Verify user has access to tenant (super_admin can access all)
+    const tenantWhere: any = { id: req.params.tenantId };
+    if (req.user?.role !== 'super_admin') {
+      tenantWhere.userId = req.user?.userId;
+    }
+
+    const tenant = await Tenant.findOne({ where: tenantWhere });
 
     if (!tenant) {
       return res.status(404).json({
@@ -223,14 +245,17 @@ router.get('/tenant/:tenantId', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /tenants/:tenantId/balance - Get current balance/arrears for a tenant
+// Super admin can view any tenant's balance
 router.get('/tenant/:tenantId/balance', async (req: AuthRequest, res: Response) => {
   try {
-    // Verify the tenant belongs to the user
+    // Verify user has access to tenant (super_admin can access all)
+    const tenantWhere: any = { id: req.params.tenantId };
+    if (req.user?.role !== 'super_admin') {
+      tenantWhere.userId = req.user?.userId;
+    }
+
     const tenant = await Tenant.findOne({
-      where: {
-        id: req.params.tenantId,
-        userId: req.user?.userId
-      },
+      where: tenantWhere,
       include: [{
         model: Unit,
         as: 'unit',
@@ -301,14 +326,141 @@ router.get('/tenant/:tenantId/balance', async (req: AuthRequest, res: Response) 
   }
 });
 
+// GET /payments/:id/receipt - Generate receipt for a payment
+// Super admin can generate receipt for any payment
+router.get('/:id/receipt', async (req: AuthRequest, res: Response) => {
+  try {
+    const { format } = req.query; // 'html' or 'text'
+
+    // Build tenant where clause - super_admin can access all
+    const tenantWhere: any = {};
+    if (req.user?.role !== 'super_admin') {
+      tenantWhere.userId = req.user?.userId;
+    }
+
+    const payment = await Payment.findByPk(req.params.id, {
+      include: [
+        {
+          model: Tenant,
+          as: 'tenant',
+          where: tenantWhere,
+          attributes: ['id', 'firstName', 'lastName', 'phone', 'email']
+        },
+        {
+          model: Unit,
+          as: 'unit',
+          attributes: ['id', 'unitNumber', 'monthlyRent'],
+          include: [{
+            model: Property,
+            as: 'property',
+            attributes: ['id', 'name', 'address']
+          }]
+        },
+        {
+          model: User,
+          as: 'receiver',
+          attributes: ['id', 'firstName', 'lastName']
+        }
+      ]
+    });
+
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Payment not found'
+      });
+    }
+
+    const paymentData = {
+      id: payment.id,
+      amount: parseFloat(payment.amount),
+      paymentDate: payment.paymentDate,
+      paymentMethod: payment.paymentMethod,
+      periodMonth: payment.periodMonth,
+      periodYear: payment.periodYear,
+      notes: payment.notes,
+      tenant: {
+        firstName: payment.tenant.firstName,
+        lastName: payment.tenant.lastName,
+        email: payment.tenant.email,
+        phone: payment.tenant.phone
+      },
+      unit: {
+        unitNumber: payment.unit.unitNumber,
+        property: {
+          name: payment.unit.property.name,
+          address: payment.unit.property.address
+        }
+      },
+      receivedBy: payment.receiver ? {
+        firstName: payment.receiver.firstName,
+        lastName: payment.receiver.lastName
+      } : undefined
+    };
+
+    if (format === 'text') {
+      const receiptText = generateReceiptText(paymentData);
+      res.setHeader('Content-Type', 'text/plain');
+      return res.send(receiptText);
+    }
+
+    if (format === 'download') {
+      const receipt = generateReceipt(paymentData);
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Content-Disposition', `attachment; filename="receipt-${receipt.receiptNumber}.html"`);
+      return res.send(receipt.html);
+    }
+
+    if (format === 'pdf') {
+      const pdfBuffer = await generateReceiptPDF(paymentData);
+      if (!pdfBuffer) {
+        // Fallback to HTML if PDF generation is not available
+        const receipt = generateReceipt(paymentData);
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Content-Disposition', `attachment; filename="receipt-${receipt.receiptNumber}.html"`);
+        return res.send(receipt.html);
+      }
+      const receipt = generateReceipt(paymentData);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="receipt-${receipt.receiptNumber}.pdf"`);
+      return res.send(pdfBuffer);
+    }
+
+    // Default: return JSON with receipt data and HTML
+    const receipt = generateReceipt(paymentData);
+    return res.status(200).json({
+      success: true,
+      data: {
+        receiptNumber: receipt.receiptNumber,
+        generatedAt: receipt.generatedAt,
+        html: receipt.html
+      }
+    });
+  } catch (error) {
+    console.error('Generate receipt error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to generate receipt'
+    });
+  }
+});
+
 // DELETE /payments/:id - Delete a payment
+// Super admin can delete any payment
 router.delete('/:id', async (req: AuthRequest, res: Response) => {
   try {
+    // Build tenant where clause - super_admin can access all
+    const tenantWhere: any = {};
+    if (req.user?.role !== 'super_admin') {
+      tenantWhere.userId = req.user?.userId;
+    }
+
     const payment = await Payment.findByPk(req.params.id, {
       include: [{
         model: Tenant,
         as: 'tenant',
-        where: { userId: req.user?.userId }
+        where: tenantWhere,
+        attributes: ['id', 'firstName', 'lastName']
       }]
     });
 
@@ -319,7 +471,29 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Store payment data for audit before deletion
+    const paymentData = {
+      id: payment.id,
+      amount: payment.amount,
+      tenantId: payment.tenantId,
+      tenantName: `${payment.tenant.firstName} ${payment.tenant.lastName}`,
+      periodMonth: payment.periodMonth,
+      periodYear: payment.periodYear,
+      paymentDate: payment.paymentDate,
+      paymentMethod: payment.paymentMethod
+    };
+
     await payment.destroy();
+
+    // Log the deletion with full payment details for audit trail
+    await logAction({
+      userId: req.user!.userId,
+      action: 'payment.delete',
+      entityType: 'payment',
+      entityId: paymentData.id,
+      description: `Deleted payment of ${paymentData.amount} RWF for ${paymentData.tenantName} (${paymentData.periodMonth}/${paymentData.periodYear})`,
+      metadata: paymentData
+    });
 
     return res.status(200).json({
       success: true,

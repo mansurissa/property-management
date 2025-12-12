@@ -1,5 +1,16 @@
 import { Router, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
+import {
+  parsePagination,
+  sendPaginated,
+  sendSuccess,
+  sendCreated,
+  sendNotFound,
+  sendError,
+  sendServerError,
+  sendDeleted,
+  sendConflict
+} from '../utils/response.utils';
 const { Tenant, Unit, Property, Payment } = require('../database/models');
 
 const router = Router();
@@ -7,17 +18,34 @@ const router = Router();
 // All routes require authentication
 router.use(authenticate);
 
-// GET /tenants - List all tenants for the authenticated user
+// GET /tenants - List all tenants for the authenticated user (with pagination)
+// Super admin can see all tenants
 router.get('/', async (req: AuthRequest, res: Response) => {
   try {
-    const { status } = req.query;
+    const { status, search } = req.query;
+    const pagination = parsePagination(req.query);
 
-    const whereClause: any = { userId: req.user?.userId };
+    const whereClause: any = {};
+    // Super admin can see all tenants, others only see their own
+    if (req.user?.role !== 'super_admin') {
+      whereClause.userId = req.user?.userId;
+    }
     if (status) {
       whereClause.status = status;
     }
 
-    const tenants = await Tenant.findAll({
+    // Add search functionality
+    if (search) {
+      const { Op } = require('sequelize');
+      whereClause[Op.or] = [
+        { firstName: { [Op.iLike]: `%${search}%` } },
+        { lastName: { [Op.iLike]: `%${search}%` } },
+        { email: { [Op.iLike]: `%${search}%` } },
+        { phone: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+
+    const { count, rows: tenants } = await Tenant.findAndCountAll({
       where: whereClause,
       include: [
         {
@@ -31,30 +59,29 @@ router.get('/', async (req: AuthRequest, res: Response) => {
           }]
         }
       ],
-      order: [['createdAt', 'DESC']]
+      order: [['createdAt', 'DESC']],
+      limit: pagination.limit,
+      offset: pagination.offset
     });
 
-    return res.status(200).json({
-      success: true,
-      data: tenants
-    });
+    return sendPaginated(res, tenants, count, pagination);
   } catch (error) {
     console.error('Get tenants error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to fetch tenants'
-    });
+    return sendServerError(res, error as Error, 'Failed to fetch tenants');
   }
 });
 
 // GET /tenants/:id - Get a single tenant
+// Super admin can view any tenant
 router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
+    const whereClause: any = { id: req.params.id };
+    if (req.user?.role !== 'super_admin') {
+      whereClause.userId = req.user?.userId;
+    }
+
     const tenant = await Tenant.findOne({
-      where: {
-        id: req.params.id,
-        userId: req.user?.userId
-      },
+      where: whereClause,
       include: [
         {
           model: Unit,
@@ -75,22 +102,13 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
     });
 
     if (!tenant) {
-      return res.status(404).json({
-        success: false,
-        message: 'Tenant not found'
-      });
+      return sendNotFound(res, 'Tenant');
     }
 
-    return res.status(200).json({
-      success: true,
-      data: tenant
-    });
+    return sendSuccess(res, tenant);
   } catch (error) {
     console.error('Get tenant error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to fetch tenant'
-    });
+    return sendServerError(res, error as Error, 'Failed to fetch tenant');
   }
 });
 
@@ -103,27 +121,26 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     } = req.body;
 
     if (!firstName || !lastName || !phone) {
-      return res.status(400).json({
-        success: false,
-        message: 'First name, last name, and phone are required'
-      });
+      return sendError(res, 'First name, last name, and phone are required');
     }
 
-    // If unitId is provided, verify it belongs to the user
+    // If unitId is provided, verify user has access (super_admin can access all)
     if (unitId) {
+      const propertyWhere: any = {};
+      if (req.user?.role !== 'super_admin') {
+        propertyWhere.userId = req.user?.userId;
+      }
+
       const unit = await Unit.findByPk(unitId, {
         include: [{
           model: Property,
           as: 'property',
-          where: { userId: req.user?.userId }
+          where: propertyWhere
         }]
       });
 
       if (!unit) {
-        return res.status(404).json({
-          success: false,
-          message: 'Unit not found'
-        });
+        return sendNotFound(res, 'Unit');
       }
 
       // Check if unit is already occupied
@@ -132,10 +149,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       });
 
       if (existingTenant) {
-        return res.status(400).json({
-          success: false,
-          message: 'Unit is already occupied'
-        });
+        return sendConflict(res, 'Unit is already occupied');
       }
     }
 
@@ -159,35 +173,26 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       await Unit.update({ status: 'occupied' }, { where: { id: unitId } });
     }
 
-    return res.status(201).json({
-      success: true,
-      data: tenant,
-      message: 'Tenant created successfully'
-    });
+    return sendCreated(res, tenant, 'Tenant created successfully');
   } catch (error) {
     console.error('Create tenant error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to create tenant'
-    });
+    return sendServerError(res, error as Error, 'Failed to create tenant');
   }
 });
 
 // PUT /tenants/:id - Update a tenant
+// Super admin can update any tenant
 router.put('/:id', async (req: AuthRequest, res: Response) => {
   try {
-    const tenant = await Tenant.findOne({
-      where: {
-        id: req.params.id,
-        userId: req.user?.userId
-      }
-    });
+    const whereClause: any = { id: req.params.id };
+    if (req.user?.role !== 'super_admin') {
+      whereClause.userId = req.user?.userId;
+    }
+
+    const tenant = await Tenant.findOne({ where: whereClause });
 
     if (!tenant) {
-      return res.status(404).json({
-        success: false,
-        message: 'Tenant not found'
-      });
+      return sendNotFound(res, 'Tenant');
     }
 
     const {
@@ -208,72 +213,60 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
       leaseEndDate: leaseEndDate !== undefined ? leaseEndDate : tenant.leaseEndDate
     });
 
-    return res.status(200).json({
-      success: true,
-      data: tenant,
-      message: 'Tenant updated successfully'
-    });
+    return sendSuccess(res, tenant, 'Tenant updated successfully');
   } catch (error) {
     console.error('Update tenant error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to update tenant'
-    });
+    return sendServerError(res, error as Error, 'Failed to update tenant');
   }
 });
 
 // POST /tenants/:id/assign - Assign tenant to a unit
+// Super admin can assign any tenant
 router.post('/:id/assign', async (req: AuthRequest, res: Response) => {
   try {
     const { unitId } = req.body;
+    const { Op } = require('sequelize');
 
     if (!unitId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Unit ID is required'
-      });
+      return sendError(res, 'Unit ID is required');
     }
 
-    const tenant = await Tenant.findOne({
-      where: {
-        id: req.params.id,
-        userId: req.user?.userId
-      }
-    });
+    const tenantWhere: any = { id: req.params.id };
+    if (req.user?.role !== 'super_admin') {
+      tenantWhere.userId = req.user?.userId;
+    }
+
+    const tenant = await Tenant.findOne({ where: tenantWhere });
 
     if (!tenant) {
-      return res.status(404).json({
-        success: false,
-        message: 'Tenant not found'
-      });
+      return sendNotFound(res, 'Tenant');
     }
 
-    // Verify the unit belongs to the user
+    // Verify user has access to the unit (super_admin can access all)
+    const propertyWhere: any = {};
+    if (req.user?.role !== 'super_admin') {
+      propertyWhere.userId = req.user?.userId;
+    }
+
     const unit = await Unit.findByPk(unitId, {
       include: [{
         model: Property,
         as: 'property',
-        where: { userId: req.user?.userId }
+        where: propertyWhere
       }]
     });
 
     if (!unit) {
-      return res.status(404).json({
-        success: false,
-        message: 'Unit not found'
-      });
+      return sendNotFound(res, 'Unit');
     }
 
     // Check if unit is already occupied by another tenant
     const existingTenant = await Tenant.findOne({
-      where: { unitId, status: 'active', id: { [require('sequelize').Op.ne]: req.params.id } }
+      where: { unitId, status: 'active', id: { [Op.ne]: req.params.id } }
     });
 
     if (existingTenant) {
-      return res.status(400).json({
-        success: false,
-        message: 'Unit is already occupied by another tenant'
-      });
+      return sendConflict(res, 'Unit is already occupied by another tenant');
     }
 
     // Unassign from previous unit if any
@@ -285,42 +278,30 @@ router.post('/:id/assign', async (req: AuthRequest, res: Response) => {
     await tenant.update({ unitId, status: 'active' });
     await Unit.update({ status: 'occupied' }, { where: { id: unitId } });
 
-    return res.status(200).json({
-      success: true,
-      data: tenant,
-      message: 'Tenant assigned to unit successfully'
-    });
+    return sendSuccess(res, tenant, 'Tenant assigned to unit successfully');
   } catch (error) {
     console.error('Assign tenant error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to assign tenant to unit'
-    });
+    return sendServerError(res, error as Error, 'Failed to assign tenant to unit');
   }
 });
 
 // POST /tenants/:id/unassign - Unassign tenant from unit
+// Super admin can unassign any tenant
 router.post('/:id/unassign', async (req: AuthRequest, res: Response) => {
   try {
-    const tenant = await Tenant.findOne({
-      where: {
-        id: req.params.id,
-        userId: req.user?.userId
-      }
-    });
+    const whereClause: any = { id: req.params.id };
+    if (req.user?.role !== 'super_admin') {
+      whereClause.userId = req.user?.userId;
+    }
+
+    const tenant = await Tenant.findOne({ where: whereClause });
 
     if (!tenant) {
-      return res.status(404).json({
-        success: false,
-        message: 'Tenant not found'
-      });
+      return sendNotFound(res, 'Tenant');
     }
 
     if (!tenant.unitId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Tenant is not assigned to any unit'
-      });
+      return sendError(res, 'Tenant is not assigned to any unit');
     }
 
     // Update unit status
@@ -329,35 +310,26 @@ router.post('/:id/unassign', async (req: AuthRequest, res: Response) => {
     // Update tenant
     await tenant.update({ unitId: null, status: 'exited' });
 
-    return res.status(200).json({
-      success: true,
-      data: tenant,
-      message: 'Tenant unassigned from unit successfully'
-    });
+    return sendSuccess(res, tenant, 'Tenant unassigned from unit successfully');
   } catch (error) {
     console.error('Unassign tenant error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to unassign tenant from unit'
-    });
+    return sendServerError(res, error as Error, 'Failed to unassign tenant from unit');
   }
 });
 
 // DELETE /tenants/:id - Delete a tenant
+// Super admin can delete any tenant
 router.delete('/:id', async (req: AuthRequest, res: Response) => {
   try {
-    const tenant = await Tenant.findOne({
-      where: {
-        id: req.params.id,
-        userId: req.user?.userId
-      }
-    });
+    const whereClause: any = { id: req.params.id };
+    if (req.user?.role !== 'super_admin') {
+      whereClause.userId = req.user?.userId;
+    }
+
+    const tenant = await Tenant.findOne({ where: whereClause });
 
     if (!tenant) {
-      return res.status(404).json({
-        success: false,
-        message: 'Tenant not found'
-      });
+      return sendNotFound(res, 'Tenant');
     }
 
     // Update unit status if tenant was assigned
@@ -367,16 +339,10 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
 
     await tenant.destroy();
 
-    return res.status(200).json({
-      success: true,
-      message: 'Tenant deleted successfully'
-    });
+    return sendDeleted(res, 'Tenant deleted successfully');
   } catch (error) {
     console.error('Delete tenant error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to delete tenant'
-    });
+    return sendServerError(res, error as Error, 'Failed to delete tenant');
   }
 });
 
