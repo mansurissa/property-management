@@ -40,7 +40,7 @@ export const agentApplicationApi = {
       message: string;
       data: { id: string; email: string; status: string; createdAt: string };
     }>('/agent-applications', data);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   // Check application status (public)
@@ -49,6 +49,6 @@ export const agentApplicationApi = {
       success: boolean;
       data: AgentApplication;
     }>(`/agent-applications/status/${encodeURIComponent(email)}`);
-    return response.data.data;
+    return (response.data as any).data;
   }
 };

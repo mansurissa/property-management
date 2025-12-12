@@ -54,6 +54,6 @@ export interface DashboardStats {
 export const dashboardApi = {
   getStats: async (): Promise<DashboardStats> => {
     const response = await apiClient.get('/dashboard/stats');
-    return response.data.data;
+    return (response.data as any).data;
   }
 };

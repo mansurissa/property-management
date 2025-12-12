@@ -59,22 +59,22 @@ export const maintenanceApi = {
 
     const queryString = params.toString();
     const response = await apiClient.get(`/maintenance${queryString ? `?${queryString}` : ''}`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   getById: async (id: string): Promise<MaintenanceTicket> => {
     const response = await apiClient.get(`/maintenance/${id}`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   create: async (data: CreateMaintenanceData): Promise<MaintenanceTicket> => {
     const response = await apiClient.post('/maintenance', data);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   update: async (id: string, data: UpdateMaintenanceData): Promise<MaintenanceTicket> => {
     const response = await apiClient.put(`/maintenance/${id}`, data);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   delete: async (id: string): Promise<void> => {

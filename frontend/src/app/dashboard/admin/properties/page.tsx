@@ -46,17 +46,16 @@ interface Property {
   name: string;
   address: string;
   city: string;
-  propertyType: string;
-  totalUnits: number;
-  occupiedUnits: number;
-  isActive: boolean;
+  type?: string;
+  isActive?: boolean;
   createdAt: string;
-  owner?: {
+  userId?: string;
+  units?: {
     id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
+    unitNumber: string;
+    status: string;
+    monthlyRent: number;
+  }[];
 }
 
 export default function AdminPropertiesPage() {
@@ -73,10 +72,14 @@ export default function AdminPropertiesPage() {
   const loadProperties = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get<{ properties: Property[] }>('/api/admin/properties');
-      setProperties(response.properties || []);
+      const response = await apiClient.get<{ data: Property[] }>('/properties');
+      const data = response.data as any;
+      // Handle paginated response - data is nested inside response.data.data
+      const propertiesArray = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+      setProperties(propertiesArray);
     } catch (err: any) {
       console.error('Failed to load properties:', err);
+      setProperties([]);
     } finally {
       setLoading(false);
     }
@@ -84,7 +87,7 @@ export default function AdminPropertiesPage() {
 
   const handleToggleActive = async (property: Property) => {
     try {
-      await apiClient.patch(`/api/admin/properties/${property.id}/status`, {
+      await apiClient.put(`/properties/${property.id}`, {
         isActive: !property.isActive
       });
       loadProperties();
@@ -93,12 +96,16 @@ export default function AdminPropertiesPage() {
     }
   };
 
-  const getPropertyTypeBadge = (type: string) => {
+  const getPropertyTypeBadge = (type: string | undefined | null) => {
+    if (!type) {
+      return <Badge className="bg-gray-100 text-gray-700">Unknown</Badge>;
+    }
     const colors: Record<string, string> = {
       apartment: 'bg-blue-100 text-blue-700',
       house: 'bg-green-100 text-green-700',
       commercial: 'bg-purple-100 text-purple-700',
-      mixed: 'bg-orange-100 text-orange-700'
+      mixed: 'bg-orange-100 text-orange-700',
+      other: 'bg-gray-100 text-gray-700'
     };
     return (
       <Badge className={colors[type] || 'bg-gray-100 text-gray-700'}>
@@ -107,15 +114,20 @@ export default function AdminPropertiesPage() {
     );
   };
 
+  const getTotalUnits = (property: Property) => property.units?.length || 0;
+
+  const getOccupiedUnits = (property: Property) =>
+    property.units?.filter(u => u.status === 'occupied').length || 0;
+
   const filteredProperties = properties.filter(property => {
     const matchesSearch =
-      property.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      property.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      property.city.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === 'all' || property.propertyType === typeFilter;
+      property.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      property.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      property.city?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = typeFilter === 'all' || property.type === typeFilter;
     const matchesStatus = statusFilter === 'all' ||
-      (statusFilter === 'active' && property.isActive) ||
-      (statusFilter === 'inactive' && !property.isActive);
+      (statusFilter === 'active' && property.isActive !== false) ||
+      (statusFilter === 'inactive' && property.isActive === false);
     return matchesSearch && matchesType && matchesStatus;
   });
 
@@ -131,6 +143,10 @@ export default function AdminPropertiesPage() {
     if (total === 0) return 0;
     return Math.round((occupied / total) * 100);
   };
+
+  // Calculate totals
+  const totalUnitsCount = properties.reduce((sum, p) => sum + getTotalUnits(p), 0);
+  const occupiedUnitsCount = properties.reduce((sum, p) => sum + getOccupiedUnits(p), 0);
 
   if (loading) {
     return (
@@ -174,7 +190,7 @@ export default function AdminPropertiesPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Active</p>
-                <p className="text-2xl font-bold">{properties.filter(p => p.isActive).length}</p>
+                <p className="text-2xl font-bold">{properties.filter(p => p.isActive !== false).length}</p>
               </div>
             </div>
           </CardContent>
@@ -187,9 +203,7 @@ export default function AdminPropertiesPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Units</p>
-                <p className="text-2xl font-bold">
-                  {properties.reduce((sum, p) => sum + p.totalUnits, 0)}
-                </p>
+                <p className="text-2xl font-bold">{totalUnitsCount}</p>
               </div>
             </div>
           </CardContent>
@@ -202,9 +216,7 @@ export default function AdminPropertiesPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Occupied Units</p>
-                <p className="text-2xl font-bold">
-                  {properties.reduce((sum, p) => sum + p.occupiedUnits, 0)}
-                </p>
+                <p className="text-2xl font-bold">{occupiedUnitsCount}</p>
               </div>
             </div>
           </CardContent>
@@ -233,7 +245,7 @@ export default function AdminPropertiesPage() {
                 <SelectItem value="apartment">Apartment</SelectItem>
                 <SelectItem value="house">House</SelectItem>
                 <SelectItem value="commercial">Commercial</SelectItem>
-                <SelectItem value="mixed">Mixed</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -278,7 +290,6 @@ export default function AdminPropertiesPage() {
                 <TableRow>
                   <TableHead>Property</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Owner</TableHead>
                   <TableHead>Units</TableHead>
                   <TableHead>Occupancy</TableHead>
                   <TableHead>Status</TableHead>
@@ -287,94 +298,82 @@ export default function AdminPropertiesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredProperties.map((property) => (
-                  <TableRow key={property.id}>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{property.name}</p>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {property.address}, {property.city}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>{getPropertyTypeBadge(property.propertyType)}</TableCell>
-                    <TableCell>
-                      {property.owner ? (
+                {filteredProperties.map((property) => {
+                  const totalUnits = getTotalUnits(property);
+                  const occupiedUnits = getOccupiedUnits(property);
+                  const occupancyRate = getOccupancyRate(occupiedUnits, totalUnits);
+
+                  return (
+                    <TableRow key={property.id}>
+                      <TableCell>
                         <div>
-                          <p className="font-medium">
-                            {property.owner.firstName} {property.owner.lastName}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {property.owner.email}
+                          <p className="font-medium">{property.name}</p>
+                          <p className="text-sm text-muted-foreground flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {property.address}, {property.city}
                           </p>
                         </div>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {property.occupiedUnits}/{property.totalUnits}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-green-500 rounded-full"
-                            style={{ width: `${getOccupancyRate(property.occupiedUnits, property.totalUnits)}%` }}
-                          />
+                      </TableCell>
+                      <TableCell>{getPropertyTypeBadge(property.type)}</TableCell>
+                      <TableCell>{occupiedUnits}/{totalUnits}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-green-500 rounded-full"
+                              style={{ width: `${occupancyRate}%` }}
+                            />
+                          </div>
+                          <span className="text-sm">{occupancyRate}%</span>
                         </div>
-                        <span className="text-sm">
-                          {getOccupancyRate(property.occupiedUnits, property.totalUnits)}%
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {property.isActive ? (
-                        <Badge className="bg-green-100 text-green-700">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Active
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-red-100 text-red-700">
-                          <XCircle className="h-3 w-3 mr-1" />
-                          Inactive
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>{formatDate(property.createdAt)}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link href={`/dashboard/admin/properties/${property.id}`}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleToggleActive(property)}>
-                            {property.isActive ? (
-                              <>
-                                <XCircle className="h-4 w-4 mr-2" />
-                                Deactivate
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Activate
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell>
+                        {property.isActive !== false ? (
+                          <Badge className="bg-green-100 text-green-700">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Active
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-red-100 text-red-700">
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Inactive
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>{formatDate(property.createdAt)}</TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link href={`/dashboard/properties/${property.id}`}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleToggleActive(property)}>
+                              {property.isActive !== false ? (
+                                <>
+                                  <XCircle className="h-4 w-4 mr-2" />
+                                  Deactivate
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  Activate
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}

@@ -126,7 +126,7 @@ export const agentPortalApi = {
     const response = await apiClient.get<{ success: boolean; data: AgentDashboard }>(
       '/agent-portal/dashboard'
     );
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   // Transactions
@@ -139,7 +139,7 @@ export const agentPortalApi = {
       success: boolean;
       data: { transactions: AgentTransaction[]; total: number; pages: number };
     }>(`/agent-portal/transactions?page=${page}&limit=${limit}`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   // Earnings
@@ -157,7 +157,7 @@ export const agentPortalApi = {
       success: boolean;
       data: { summary: AgentEarnings; commissions: AgentCommission[] };
     }>(url);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   // Profile
@@ -165,7 +165,7 @@ export const agentPortalApi = {
     const response = await apiClient.get<{ success: boolean; data: AgentProfile }>(
       '/agent-portal/profile'
     );
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   updateProfile: async (data: { firstName?: string; lastName?: string; phone?: string }): Promise<any> => {
@@ -173,7 +173,7 @@ export const agentPortalApi = {
       '/agent-portal/profile',
       data
     );
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   changePassword: async (data: { currentPassword: string; newPassword: string }): Promise<void> => {
@@ -188,14 +188,14 @@ export const agentPortalApi = {
     const response = await apiClient.get<{ success: boolean; data: Owner[] }>(
       `/agent-portal/owners${search ? `?search=${encodeURIComponent(search)}` : ''}`
     );
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   searchTenants: async (search?: string): Promise<TenantSearchResult[]> => {
     const response = await apiClient.get<{ success: boolean; data: TenantSearchResult[] }>(
       `/agent-portal/tenants${search ? `?search=${encodeURIComponent(search)}` : ''}`
     );
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   // Owner assistance
@@ -203,14 +203,14 @@ export const agentPortalApi = {
     const response = await apiClient.get<{ success: boolean; data: Property[] }>(
       `/agent-portal/owner/${ownerId}/properties`
     );
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   getOwnerTenants: async (ownerId: string): Promise<TenantSearchResult[]> => {
     const response = await apiClient.get<{ success: boolean; data: TenantSearchResult[] }>(
       `/agent-portal/owner/${ownerId}/tenants`
     );
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   createPropertyForOwner: async (data: {
@@ -224,7 +224,7 @@ export const agentPortalApi = {
       success: boolean;
       data: { property: any; commission: { amount: number; status: string } | null };
     }>('/agent-portal/assist-owner/property', data);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   updatePropertyForOwner: async (propertyId: string, data: {
@@ -237,7 +237,7 @@ export const agentPortalApi = {
       `/agent-portal/assist-owner/property/${propertyId}`,
       data
     );
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   addTenantForOwner: async (data: {
@@ -256,7 +256,7 @@ export const agentPortalApi = {
       success: boolean;
       data: { tenant: any; commission: { amount: number; status: string } | null };
     }>('/agent-portal/assist-owner/tenant', data);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   recordPaymentForOwner: async (data: {
@@ -274,7 +274,7 @@ export const agentPortalApi = {
       success: boolean;
       data: { payment: any; commission: { amount: number; status: string } | null };
     }>('/agent-portal/assist-owner/payment', data);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   // Tenant assistance
@@ -286,7 +286,7 @@ export const agentPortalApi = {
       `/agent-portal/assist-tenant/${tenantId}/info`,
       data
     );
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   recordPaymentForTenant: async (tenantId: string, data: {
@@ -301,7 +301,7 @@ export const agentPortalApi = {
       success: boolean;
       data: { payment: any; commission: { amount: number; status: string } | null };
     }>(`/agent-portal/assist-tenant/${tenantId}/payment`, data);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   submitMaintenanceForTenant: async (tenantId: string, data: {
@@ -314,6 +314,6 @@ export const agentPortalApi = {
       success: boolean;
       data: { ticket: any; commission: { amount: number; status: string } | null };
     }>(`/agent-portal/assist-tenant/${tenantId}/maintenance`, data);
-    return response.data.data;
+    return (response.data as any).data;
   }
 };

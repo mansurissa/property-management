@@ -70,17 +70,17 @@ export const paymentsApi = {
 
     const queryString = params.toString();
     const response = await apiClient.get(`/payments${queryString ? `?${queryString}` : ''}`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   getById: async (id: string): Promise<Payment> => {
     const response = await apiClient.get(`/payments/${id}`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   create: async (data: CreatePaymentData): Promise<Payment> => {
     const response = await apiClient.post('/payments', data);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   delete: async (id: string): Promise<void> => {
@@ -89,11 +89,11 @@ export const paymentsApi = {
 
   getTenantPayments: async (tenantId: string): Promise<Payment[]> => {
     const response = await apiClient.get(`/payments/tenant/${tenantId}`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   getTenantBalance: async (tenantId: string): Promise<TenantBalance> => {
     const response = await apiClient.get(`/payments/tenant/${tenantId}/balance`);
-    return response.data.data;
+    return (response.data as any).data;
   }
 };

@@ -111,7 +111,7 @@ export const adminAgentsApi = {
         pagination: { total: number; page: number; pages: number };
       };
     }>(`/admin/agents/applications?${searchParams.toString()}`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   getApplication: async (id: string): Promise<AgentApplication> => {
@@ -119,7 +119,7 @@ export const adminAgentsApi = {
       success: boolean;
       data: AgentApplication;
     }>(`/admin/agents/applications/${id}`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   approveApplication: async (id: string): Promise<{
@@ -135,7 +135,7 @@ export const adminAgentsApi = {
         temporaryPassword: string;
       };
     }>(`/admin/agents/applications/${id}/approve`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   rejectApplication: async (id: string, reason?: string): Promise<AgentApplication> => {
@@ -143,7 +143,7 @@ export const adminAgentsApi = {
       success: boolean;
       data: AgentApplication;
     }>(`/admin/agents/applications/${id}/reject`, { reason });
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   // Agents
@@ -169,7 +169,7 @@ export const adminAgentsApi = {
         pagination: { total: number; page: number; pages: number };
       };
     }>(`/admin/agents?${searchParams.toString()}`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   getAgent: async (id: string): Promise<AgentDetails> => {
@@ -177,7 +177,7 @@ export const adminAgentsApi = {
       success: boolean;
       data: AgentDetails;
     }>(`/admin/agents/${id}`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   suspendAgent: async (id: string): Promise<void> => {
@@ -193,7 +193,7 @@ export const adminAgentsApi = {
       success: boolean;
       data: { temporaryPassword: string };
     }>(`/admin/agents/${id}/reset-password`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   getAgentTransactions: async (id: string, params?: {
@@ -214,7 +214,7 @@ export const adminAgentsApi = {
         pagination: { total: number; page: number; pages: number };
       };
     }>(`/admin/agents/${id}/transactions?${searchParams.toString()}`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   getAgentCommissions: async (id: string, params?: {
@@ -237,7 +237,7 @@ export const adminAgentsApi = {
         pagination: { total: number; page: number; pages: number };
       };
     }>(`/admin/agents/${id}/commissions?${searchParams.toString()}`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   payCommission: async (commissionId: string, notes?: string): Promise<void> => {

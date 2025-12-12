@@ -107,7 +107,7 @@ export const adminCommissionsApi = {
       success: boolean;
       data: CommissionRule[];
     }>('/admin/commissions/rules');
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   getRule: async (id: string): Promise<CommissionRule> => {
@@ -115,7 +115,7 @@ export const adminCommissionsApi = {
       success: boolean;
       data: CommissionRule;
     }>(`/admin/commissions/rules/${id}`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   createRule: async (data: CreateCommissionRuleData): Promise<CommissionRule> => {
@@ -123,7 +123,7 @@ export const adminCommissionsApi = {
       success: boolean;
       data: CommissionRule;
     }>('/admin/commissions/rules', data);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   updateRule: async (id: string, data: UpdateCommissionRuleData): Promise<CommissionRule> => {
@@ -131,7 +131,7 @@ export const adminCommissionsApi = {
       success: boolean;
       data: CommissionRule;
     }>(`/admin/commissions/rules/${id}`, data);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   deleteRule: async (id: string): Promise<void> => {
@@ -143,7 +143,7 @@ export const adminCommissionsApi = {
       success: boolean;
       data: ActionType[];
     }>('/admin/commissions/action-types');
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   // Reports
@@ -156,7 +156,7 @@ export const adminCommissionsApi = {
       success: boolean;
       data: CommissionReports;
     }>(`/admin/commissions/reports?${params.toString()}`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   // Commissions
@@ -182,7 +182,7 @@ export const adminCommissionsApi = {
         pagination: { total: number; page: number; pages: number };
       };
     }>(`/admin/commissions?${searchParams.toString()}`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   payCommission: async (id: string, notes?: string): Promise<void> => {

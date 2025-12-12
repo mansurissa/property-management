@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { sessionManager } from '@/lib/session';
+import { authApi } from '@/lib/api/auth';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,34 +40,27 @@ export default function LoginPage() {
     }
 
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password
-        })
+      const response = await authApi.login({
+        email: formData.email,
+        password: formData.password
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        setError(data.message || 'Login failed. Please try again.');
+      if (!response.success) {
+        setError(response.message || 'Login failed. Please try again.');
         setIsLoading(false);
         return;
       }
 
       // Use sessionManager to properly set the session
-      sessionManager.setSession(data.data, 24, true); // 24 hours, remember = true
+      sessionManager.setSession({
+        token: response.data.token,
+        user: response.data.user
+      }, 24, true); // 24 hours, remember = true
 
       router.push('/dashboard');
-    } catch (error) {
-      console.error('Login error:', error);
-      setError('An error occurred. Please try again.');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message || 'An error occurred. Please try again.');
       setIsLoading(false);
     }
   };

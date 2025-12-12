@@ -85,8 +85,9 @@ export default function AdminUsersPage() {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get<{ users: User[] }>('/api/admin/users');
-      setUsers(response.users || []);
+      const response = await apiClient.get<{ data: User[] }>('/admin/users');
+      const data = response.data as any;
+      setUsers(data?.data || []);
     } catch (err: any) {
       console.error('Failed to load users:', err);
     } finally {
@@ -97,7 +98,7 @@ export default function AdminUsersPage() {
   const handleCreateUser = async () => {
     try {
       setIsProcessing(true);
-      await apiClient.post('/api/admin/users', formData);
+      await apiClient.post('/admin/users', formData);
       setShowCreateDialog(false);
       resetForm();
       loadUsers();
@@ -112,7 +113,7 @@ export default function AdminUsersPage() {
     if (!selectedUser) return;
     try {
       setIsProcessing(true);
-      await apiClient.put(`/api/admin/users/${selectedUser.id}`, {
+      await apiClient.put(`/admin/users/${selectedUser.id}`, {
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone,
@@ -131,7 +132,7 @@ export default function AdminUsersPage() {
 
   const handleToggleActive = async (user: User) => {
     try {
-      await apiClient.patch(`/api/admin/users/${user.id}/status`, {
+      await apiClient.put(`/admin/users/${user.id}`, {
         isActive: !user.isActive
       });
       loadUsers();
@@ -143,7 +144,7 @@ export default function AdminUsersPage() {
   const handleDeleteUser = async (user: User) => {
     if (!confirm(`Are you sure you want to delete ${user.firstName} ${user.lastName}?`)) return;
     try {
-      await apiClient.delete(`/api/admin/users/${user.id}`);
+      await apiClient.delete(`/admin/users/${user.id}`);
       loadUsers();
     } catch (err: any) {
       alert(err.message || 'Failed to delete user');

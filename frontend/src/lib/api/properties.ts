@@ -53,22 +53,22 @@ export interface UpdatePropertyData {
 export const propertiesApi = {
   getAll: async (): Promise<Property[]> => {
     const response = await apiClient.get('/properties');
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   getById: async (id: string): Promise<Property> => {
     const response = await apiClient.get(`/properties/${id}`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   create: async (data: CreatePropertyData): Promise<Property> => {
     const response = await apiClient.post('/properties', data);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   update: async (id: string, data: UpdatePropertyData): Promise<Property> => {
     const response = await apiClient.put(`/properties/${id}`, data);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   delete: async (id: string): Promise<void> => {

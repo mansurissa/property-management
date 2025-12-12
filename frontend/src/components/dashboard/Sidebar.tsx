@@ -16,10 +16,12 @@ import {
   Home,
   ClipboardList,
   Settings,
-  Shield,
   DollarSign,
   Activity,
-  Briefcase
+  Briefcase,
+  User,
+  Bell,
+  Play
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -34,12 +36,13 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-// Navigation items based on role
+// Navigation items based on role (Profile removed from desktop - now in top navbar)
 const getNavigationByRole = (role: UserRole | null): NavItem[] => {
   switch (role) {
     case 'super_admin':
       return [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+        { name: 'Demo Requests', href: '/dashboard/admin/demo-requests', icon: Play },
         { name: 'Users', href: '/dashboard/admin/users', icon: Users },
         { name: 'Agencies', href: '/dashboard/admin/agencies', icon: UserCog },
         { name: 'Properties', href: '/dashboard/admin/properties', icon: Building2 },
@@ -47,7 +50,6 @@ const getNavigationByRole = (role: UserRole | null): NavItem[] => {
         { name: 'Commissions', href: '/dashboard/admin/commissions', icon: DollarSign },
         { name: 'Reports', href: '/dashboard/admin/reports', icon: ClipboardList },
         { name: 'Settings', href: '/dashboard/admin/settings', icon: Settings },
-        { name: 'Profile', href: '/dashboard/admin/profile', icon: Shield },
       ];
     case 'agency':
       return [
@@ -56,7 +58,6 @@ const getNavigationByRole = (role: UserRole | null): NavItem[] => {
         { name: 'Owners', href: '/dashboard/agency/owners', icon: Users },
         { name: 'Maintenance', href: '/dashboard/maintenance', icon: Wrench },
         { name: 'Reports', href: '/dashboard/agency/reports', icon: ClipboardList },
-        { name: 'Profile', href: '/dashboard/agency/profile', icon: UserCog },
       ];
     case 'owner':
       return [
@@ -65,7 +66,6 @@ const getNavigationByRole = (role: UserRole | null): NavItem[] => {
         { name: 'Tenants', href: '/dashboard/tenants', icon: Users },
         { name: 'Payments', href: '/dashboard/payments', icon: CreditCard },
         { name: 'Maintenance', href: '/dashboard/maintenance', icon: Wrench },
-        { name: 'Profile', href: '/dashboard/owner/profile', icon: UserCog },
       ];
     case 'tenant':
       return [
@@ -73,7 +73,6 @@ const getNavigationByRole = (role: UserRole | null): NavItem[] => {
         { name: 'My Unit', href: '/dashboard/tenant/unit', icon: Home },
         { name: 'Payments', href: '/dashboard/tenant/payments', icon: CreditCard },
         { name: 'Maintenance', href: '/dashboard/tenant/maintenance', icon: Wrench },
-        { name: 'Profile', href: '/dashboard/tenant/profile', icon: UserCog },
       ];
     case 'manager':
       return [
@@ -82,13 +81,11 @@ const getNavigationByRole = (role: UserRole | null): NavItem[] => {
         { name: 'Tenants', href: '/dashboard/manager/tenants', icon: Users },
         { name: 'Payments', href: '/dashboard/manager/payments', icon: CreditCard },
         { name: 'Maintenance', href: '/dashboard/manager/maintenance', icon: Wrench },
-        { name: 'Profile', href: '/dashboard/manager/profile', icon: UserCog },
       ];
     case 'maintenance':
       return [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { name: 'My Tickets', href: '/dashboard/staff/tickets', icon: ClipboardList },
-        { name: 'Profile', href: '/dashboard/staff/profile', icon: UserCog },
       ];
     case 'agent':
       return [
@@ -97,12 +94,25 @@ const getNavigationByRole = (role: UserRole | null): NavItem[] => {
         { name: 'Assist Tenants', href: '/dashboard/agent/assist-tenant', icon: Users },
         { name: 'Transactions', href: '/dashboard/agent/transactions', icon: Activity },
         { name: 'Earnings', href: '/dashboard/agent/earnings', icon: DollarSign },
-        { name: 'Profile', href: '/dashboard/agent/profile', icon: UserCog },
       ];
     default:
       return [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
       ];
+  }
+};
+
+// Get profile URL based on role (for mobile menu)
+const getProfileUrl = (role: UserRole | null): string => {
+  switch (role) {
+    case 'super_admin': return '/dashboard/admin/profile';
+    case 'agency': return '/dashboard/agency/profile';
+    case 'owner': return '/dashboard/owner/profile';
+    case 'manager': return '/dashboard/manager/profile';
+    case 'tenant': return '/dashboard/tenant/profile';
+    case 'maintenance': return '/dashboard/staff/profile';
+    case 'agent': return '/dashboard/agent/profile';
+    default: return '/dashboard';
   }
 };
 
@@ -166,7 +176,10 @@ export default function Sidebar() {
 
   const SidebarContent = () => (
     <>
-      <div className="flex h-16 items-center justify-center border-b border-sidebar-border">
+      <div className="flex h-16 items-center gap-2 px-4 border-b border-sidebar-border">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white">
+          <span className="text-lg font-bold text-primary">R</span>
+        </div>
         <h1 className="text-2xl font-bold text-sidebar-foreground">Renta</h1>
       </div>
 
@@ -203,17 +216,6 @@ export default function Sidebar() {
           );
         })}
       </nav>
-
-      <div className="border-t border-sidebar-border p-4">
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-          onClick={handleLogout}
-        >
-          <LogOut className="h-5 w-5" />
-          Logout
-        </Button>
-      </div>
     </>
   );
 
@@ -282,7 +284,25 @@ export default function Sidebar() {
             })}
           </nav>
 
-          <div className="border-t border-sidebar-border p-4">
+          <div className="border-t border-sidebar-border p-4 space-y-1">
+            {/* Mobile-only: Notifications link */}
+            <Link
+              href="/dashboard/notifications"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors"
+            >
+              <Bell className="h-5 w-5" />
+              Notifications
+            </Link>
+            {/* Mobile-only: Profile link */}
+            <Link
+              href={getProfileUrl(userRole)}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors"
+            >
+              <User className="h-5 w-5" />
+              Profile
+            </Link>
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"

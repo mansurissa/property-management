@@ -72,22 +72,22 @@ export const tenantsApi = {
   getAll: async (status?: string): Promise<Tenant[]> => {
     const params = status ? `?status=${status}` : '';
     const response = await apiClient.get(`/tenants${params}`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   getById: async (id: string): Promise<Tenant> => {
     const response = await apiClient.get(`/tenants/${id}`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   create: async (data: CreateTenantData): Promise<Tenant> => {
     const response = await apiClient.post('/tenants', data);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   update: async (id: string, data: UpdateTenantData): Promise<Tenant> => {
     const response = await apiClient.put(`/tenants/${id}`, data);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   delete: async (id: string): Promise<void> => {
@@ -96,11 +96,11 @@ export const tenantsApi = {
 
   assign: async (id: string, unitId: string): Promise<Tenant> => {
     const response = await apiClient.post(`/tenants/${id}/assign`, { unitId });
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   unassign: async (id: string): Promise<Tenant> => {
     const response = await apiClient.post(`/tenants/${id}/unassign`);
-    return response.data.data;
+    return (response.data as any).data;
   }
 };

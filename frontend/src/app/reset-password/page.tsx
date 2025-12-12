@@ -2,14 +2,14 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Lock, Building2, ArrowRight, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { authApi } from '@/lib/api/auth';
 
 function ResetPasswordForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
 
@@ -77,35 +77,20 @@ function ResetPasswordForm() {
     }
 
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-      const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          token,
-          password: formData.password
-        })
+      await authApi.resetPassword({
+        token: token!,
+        password: formData.password
       });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        if (response.status === 400 || response.status === 401) {
-          setIsInvalidToken(true);
-        } else {
-          setError(data.message || 'Failed to reset password. Please try again.');
-        }
-        setIsLoading(false);
-        return;
-      }
-
       setIsSuccess(true);
-    } catch (error) {
-      console.error('Reset password error:', error);
-      setError('An error occurred. Please try again.');
+    } catch (err: any) {
+      console.error('Reset password error:', err);
+      const status = err.response?.status;
+      if (status === 400 || status === 401) {
+        setIsInvalidToken(true);
+      } else {
+        setError(err.response?.data?.message || 'Failed to reset password. Please try again.');
+      }
+    } finally {
       setIsLoading(false);
     }
   };

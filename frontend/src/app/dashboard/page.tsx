@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { dashboardApi, DashboardStats } from '@/lib/api/dashboard';
 import { tenantPortalApi, DashboardData as TenantDashboardData } from '@/lib/api/tenant-portal';
+import { adminApi, AdminStats } from '@/lib/api/admin';
+import { demoRequestsApi, DemoRequestStats } from '@/lib/api/demo-requests';
 import StatsCard from '@/components/dashboard/StatsCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,14 +20,15 @@ import {
   Home,
   TrendingUp,
   ClipboardList,
-  Shield,
   DollarSign,
-  Calendar,
   MapPin,
   CheckCircle,
   AlertCircle,
   Clock,
-  Plus
+  Plus,
+  Play,
+  UserPlus,
+  ArrowRight
 } from 'lucide-react';
 
 type UserRole = 'super_admin' | 'agency' | 'owner' | 'manager' | 'tenant' | 'maintenance' | 'agent';
@@ -55,24 +58,23 @@ const getWelcomeMessage = (role: UserRole | null): string => {
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [tenantData, setTenantData] = useState<TenantDashboardData | null>(null);
+  const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
+  const [demoStats, setDemoStats] = useState<DemoRequestStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [userRole, setUserRole] = useState<UserRole | null>(null);
-  const [userName, setUserName] = useState<string>('');
 
   useEffect(() => {
     const role = sessionManager.getUserRole() as UserRole | null;
-    const user = sessionManager.getUser();
     setUserRole(role);
-    if (user) {
-      setUserName(user.firstName || user.email);
-    }
 
     // Load role-specific dashboard data
     if (role === 'owner' || role === 'agency') {
       loadStats();
     } else if (role === 'tenant') {
       loadTenantDashboard();
+    } else if (role === 'super_admin') {
+      loadAdminStats();
     } else {
       setLoading(false);
     }
@@ -97,6 +99,43 @@ export default function DashboardPage() {
     } catch (err) {
       setError('Failed to load dashboard data');
       console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadAdminStats = async () => {
+    try {
+      // Check if we have a token before making the request
+      const token = sessionManager.getToken();
+      if (!token) {
+        setError('Session expired. Please log in again.');
+        setLoading(false);
+        return;
+      }
+
+      // Load admin stats first
+      const adminData = await adminApi.getStats();
+      setAdminStats(adminData);
+
+      // Try to load demo stats separately (don't fail if this fails)
+      try {
+        const demoData = await demoRequestsApi.getStats();
+        setDemoStats(demoData);
+      } catch (demoErr) {
+        console.error('Failed to load demo stats:', demoErr);
+        // Don't set error - demo stats are optional
+      }
+    } catch (err: any) {
+      console.error('Failed to load admin statistics:', err);
+      // Show more specific error messages
+      if (err?.status === 401) {
+        setError('Session expired. Please log in again.');
+      } else if (err?.status === 403) {
+        setError('Access denied. Admin privileges required.');
+      } else {
+        setError(err?.message || 'Failed to load admin statistics');
+      }
     } finally {
       setLoading(false);
     }
@@ -154,10 +193,20 @@ export default function DashboardPage() {
     );
   }
 
-  if (error) {
+  if (error && !adminStats && !stats && !tenantData) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex flex-col items-center justify-center h-64 gap-4">
         <p className="text-destructive">{error}</p>
+        <Button onClick={() => {
+          setError('');
+          setLoading(true);
+          if (userRole === 'super_admin') loadAdminStats();
+          else if (userRole === 'owner' || userRole === 'agency') loadStats();
+          else if (userRole === 'tenant') loadTenantDashboard();
+          else setLoading(false);
+        }}>
+          Try Again
+        </Button>
       </div>
     );
   }
@@ -166,22 +215,264 @@ export default function DashboardPage() {
   const renderRoleDashboard = () => {
     switch (userRole) {
       case 'super_admin':
+        const getRoleCount = (role: string): number => {
+          if (!adminStats?.usersByRole) return 0;
+          const found = adminStats.usersByRole.find(r => r.role === role);
+          return found ? parseInt(found.count) : 0;
+        };
+
         return (
           <div className="space-y-6">
+            {/* Main Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total Users</p>
+                      <p className="text-3xl font-bold">{adminStats?.overview.totalUsers || 0}</p>
+                    </div>
+                    <Users className="h-8 w-8 text-blue-500" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Properties</p>
+                      <p className="text-3xl font-bold">{adminStats?.overview.totalProperties || 0}</p>
+                    </div>
+                    <Building2 className="h-8 w-8 text-green-500" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total Units</p>
+                      <p className="text-3xl font-bold">{adminStats?.overview.totalUnits || 0}</p>
+                    </div>
+                    <Home className="h-8 w-8 text-purple-500" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total Tenants</p>
+                      <p className="text-3xl font-bold">{adminStats?.overview.totalTenants || 0}</p>
+                    </div>
+                    <Users className="h-8 w-8 text-orange-500" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Secondary Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-green-700">Monthly Revenue</p>
+                      <p className="text-2xl font-bold text-green-800">{formatCurrency(adminStats?.overview.totalRevenue || 0)}</p>
+                    </div>
+                    <DollarSign className="h-8 w-8 text-green-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-blue-700">Occupancy Rate</p>
+                      <p className="text-2xl font-bold text-blue-800">{adminStats?.overview.occupancyRate || 0}%</p>
+                    </div>
+                    <TrendingUp className="h-8 w-8 text-blue-600" />
+                  </div>
+                  <p className="text-xs text-blue-600 mt-2">
+                    {adminStats?.overview.occupiedUnits || 0} occupied / {adminStats?.overview.vacantUnits || 0} vacant
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-amber-700">Pending Maintenance</p>
+                      <p className="text-2xl font-bold text-amber-800">{adminStats?.overview.pendingMaintenance || 0}</p>
+                    </div>
+                    <Wrench className="h-8 w-8 text-amber-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {demoStats && (
+                <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-purple-700">Pending Demos</p>
+                        <p className="text-2xl font-bold text-purple-800">{demoStats.pending}</p>
+                      </div>
+                      <Play className="h-8 w-8 text-purple-600" />
+                    </div>
+                    <p className="text-xs text-purple-600 mt-2">
+                      {demoStats.recentCount} in last 7 days
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Users by Role & Recent Users */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Users by Role */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Users by Role
+                  </CardTitle>
+                  <CardDescription>
+                    Distribution of users across different roles
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {[
+                      { role: 'super_admin', label: 'Super Admins', color: 'bg-red-500' },
+                      { role: 'agency', label: 'Agencies', color: 'bg-blue-500' },
+                      { role: 'owner', label: 'Owners', color: 'bg-green-500' },
+                      { role: 'manager', label: 'Managers', color: 'bg-purple-500' },
+                      { role: 'tenant', label: 'Tenants', color: 'bg-orange-500' },
+                      { role: 'maintenance', label: 'Maintenance', color: 'bg-amber-500' },
+                      { role: 'agent', label: 'Agents', color: 'bg-cyan-500' }
+                    ].map(({ role, label, color }) => {
+                      const count = getRoleCount(role);
+                      const percentage = (adminStats?.overview.totalUsers || 0) > 0
+                        ? Math.round((count / (adminStats?.overview.totalUsers || 1)) * 100)
+                        : 0;
+                      return (
+                        <div key={role} className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-3 h-3 rounded-full ${color}`} />
+                            <span className="text-sm">{label}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">{count}</span>
+                            <span className="text-xs text-muted-foreground">({percentage}%)</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Recent Users */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <UserPlus className="h-5 w-5" />
+                    Recent Users
+                  </CardTitle>
+                  <CardDescription>
+                    Latest users registered on the platform
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {!adminStats?.recentUsers || adminStats.recentUsers.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      No users found
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {adminStats.recentUsers.slice(0, 5).map(user => (
+                        <div key={user.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <span className="text-xs font-medium text-primary">
+                                {(user.firstName?.[0] || user.email[0]).toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">
+                                {user.firstName && user.lastName
+                                  ? `${user.firstName} ${user.lastName}`
+                                  : user.email}
+                              </p>
+                              <p className="text-xs text-muted-foreground">{user.email}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <Badge variant="outline" className="text-xs">
+                              {user.role.replace('_', ' ')}
+                            </Badge>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {formatDate(user.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <Link href="/dashboard/admin/users">
+                    <Button variant="ghost" className="w-full mt-4">
+                      View All Users
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Quick Actions */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  Super Admin Dashboard
-                </CardTitle>
-                <CardDescription>
-                  Platform administration and management
-                </CardDescription>
+                <CardTitle>Quick Actions</CardTitle>
+                <CardDescription>Common administrative tasks</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">
-                  Navigate to the Users, Agencies, or Properties sections in the sidebar to manage the platform.
-                </p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <Link href="/dashboard/admin/users">
+                    <Button variant="outline" className="w-full h-20 flex flex-col gap-2">
+                      <Users className="h-5 w-5" />
+                      <span className="text-xs">Manage Users</span>
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard/admin/agencies">
+                    <Button variant="outline" className="w-full h-20 flex flex-col gap-2">
+                      <Building2 className="h-5 w-5" />
+                      <span className="text-xs">View Agencies</span>
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard/admin/demo-requests">
+                    <Button variant="outline" className="w-full h-20 flex flex-col gap-2 relative">
+                      <Play className="h-5 w-5" />
+                      <span className="text-xs">Demo Requests</span>
+                      {demoStats && demoStats.pending > 0 && (
+                        <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center">
+                          {demoStats.pending}
+                        </Badge>
+                      )}
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard/admin/agents/applications">
+                    <Button variant="outline" className="w-full h-20 flex flex-col gap-2">
+                      <Clock className="h-5 w-5" />
+                      <span className="text-xs">Agent Applications</span>
+                    </Button>
+                  </Link>
+                </div>
               </CardContent>
             </Card>
           </div>

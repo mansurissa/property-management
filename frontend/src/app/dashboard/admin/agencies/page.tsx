@@ -23,7 +23,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Building2,
   Search,
@@ -33,7 +32,6 @@ import {
   CheckCircle,
   XCircle,
   MoreHorizontal,
-  Users,
   Home
 } from 'lucide-react';
 import {
@@ -46,17 +44,13 @@ import { apiClient } from '@/lib/api-client';
 
 interface Agency {
   id: string;
-  name: string;
+  firstName: string | null;
+  lastName: string | null;
   email: string;
   phone?: string;
-  address?: string;
-  description?: string;
   isActive: boolean;
   createdAt: string;
-  _count?: {
-    properties: number;
-    users: number;
-  };
+  managedProperties?: { id: string; name: string }[];
 }
 
 export default function AdminAgenciesPage() {
@@ -69,11 +63,11 @@ export default function AdminAgenciesPage() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
-    address: '',
-    description: ''
+    password: ''
   });
 
   useEffect(() => {
@@ -83,8 +77,9 @@ export default function AdminAgenciesPage() {
   const loadAgencies = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get<{ agencies: Agency[] }>('/api/admin/agencies');
-      setAgencies(response.agencies || []);
+      const response = await apiClient.get<{ data: Agency[] }>('/admin/agencies');
+      const data = response.data as any;
+      setAgencies(data?.data || []);
     } catch (err: any) {
       console.error('Failed to load agencies:', err);
     } finally {
@@ -95,7 +90,7 @@ export default function AdminAgenciesPage() {
   const handleCreateAgency = async () => {
     try {
       setIsProcessing(true);
-      await apiClient.post('/api/admin/agencies', formData);
+      await apiClient.post('/admin/users', { ...formData, role: 'agency' });
       setShowCreateDialog(false);
       resetForm();
       loadAgencies();
@@ -110,7 +105,11 @@ export default function AdminAgenciesPage() {
     if (!selectedAgency) return;
     try {
       setIsProcessing(true);
-      await apiClient.put(`/api/admin/agencies/${selectedAgency.id}`, formData);
+      await apiClient.put(`/admin/users/${selectedAgency.id}`, {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone
+      });
       setShowEditDialog(false);
       setSelectedAgency(null);
       resetForm();
@@ -124,7 +123,7 @@ export default function AdminAgenciesPage() {
 
   const handleToggleActive = async (agency: Agency) => {
     try {
-      await apiClient.patch(`/api/admin/agencies/${agency.id}/status`, {
+      await apiClient.put(`/admin/users/${agency.id}`, {
         isActive: !agency.isActive
       });
       loadAgencies();
@@ -134,9 +133,10 @@ export default function AdminAgenciesPage() {
   };
 
   const handleDeleteAgency = async (agency: Agency) => {
-    if (!confirm(`Are you sure you want to delete ${agency.name}?`)) return;
+    const name = getAgencyName(agency);
+    if (!confirm(`Are you sure you want to delete ${name}?`)) return;
     try {
-      await apiClient.delete(`/api/admin/agencies/${agency.id}`);
+      await apiClient.delete(`/admin/users/${agency.id}`);
       loadAgencies();
     } catch (err: any) {
       alert(err.message || 'Failed to delete agency');
@@ -146,29 +146,37 @@ export default function AdminAgenciesPage() {
   const openEditDialog = (agency: Agency) => {
     setSelectedAgency(agency);
     setFormData({
-      name: agency.name,
+      firstName: agency.firstName || '',
+      lastName: agency.lastName || '',
       email: agency.email,
       phone: agency.phone || '',
-      address: agency.address || '',
-      description: agency.description || ''
+      password: ''
     });
     setShowEditDialog(true);
   };
 
   const resetForm = () => {
     setFormData({
-      name: '',
+      firstName: '',
+      lastName: '',
       email: '',
       phone: '',
-      address: '',
-      description: ''
+      password: ''
     });
   };
 
-  const filteredAgencies = agencies.filter(agency =>
-    agency.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    agency.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const getAgencyName = (agency: Agency) => {
+    if (agency.firstName || agency.lastName) {
+      return `${agency.firstName || ''} ${agency.lastName || ''}`.trim();
+    }
+    return agency.email;
+  };
+
+  const filteredAgencies = agencies.filter(agency => {
+    const name = getAgencyName(agency).toLowerCase();
+    return name.includes(searchTerm.toLowerCase()) ||
+      agency.email.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-RW', {
@@ -242,10 +250,10 @@ export default function AdminAgenciesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Agency</TableHead>
-                  <TableHead>Contact</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead>
                   <TableHead>Properties</TableHead>
-                  <TableHead>Users</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -254,32 +262,15 @@ export default function AdminAgenciesPage() {
               <TableBody>
                 {filteredAgencies.map((agency) => (
                   <TableRow key={agency.id}>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{agency.name}</p>
-                        {agency.address && (
-                          <p className="text-sm text-muted-foreground">{agency.address}</p>
-                        )}
-                      </div>
+                    <TableCell className="font-medium">
+                      {getAgencyName(agency)}
                     </TableCell>
-                    <TableCell>
-                      <div>
-                        <p>{agency.email}</p>
-                        {agency.phone && (
-                          <p className="text-sm text-muted-foreground">{agency.phone}</p>
-                        )}
-                      </div>
-                    </TableCell>
+                    <TableCell>{agency.email}</TableCell>
+                    <TableCell>{agency.phone || '-'}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Home className="h-4 w-4 text-muted-foreground" />
-                        {agency._count?.properties || 0}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        {agency._count?.users || 0}
+                        {agency.managedProperties?.length || 0}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -349,12 +340,21 @@ export default function AdminAgenciesPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Agency Name</Label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>First Name</Label>
+                <Input
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Last Name</Label>
+                <Input
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Email</Label>
@@ -372,18 +372,11 @@ export default function AdminAgenciesPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Address</Label>
+              <Label>Password</Label>
               <Input
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={3}
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
             </div>
           </div>
@@ -408,19 +401,29 @@ export default function AdminAgenciesPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Agency Name</Label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>First Name</Label>
+                <Input
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Last Name</Label>
+                <Input
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Email</Label>
               <Input
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                disabled
+                className="bg-muted"
               />
             </div>
             <div className="space-y-2">
@@ -428,21 +431,6 @@ export default function AdminAgenciesPage() {
               <Input
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Address</Label>
-              <Input
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={3}
               />
             </div>
           </div>

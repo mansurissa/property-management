@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { sessionManager } from '@/lib/session';
+import { authApi } from '@/lib/api/auth';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -63,37 +64,30 @@ export default function SignupPage() {
     }
 
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phone: formData.phone || undefined,
-          password: formData.password
-        })
+      const response = await authApi.register({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone || '',
+        password: formData.password
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        setError(data.message || 'Registration failed. Please try again.');
+      if (!response.success) {
+        setError(response.message || 'Registration failed. Please try again.');
         setIsLoading(false);
         return;
       }
 
       // Auto login after successful registration
-      sessionManager.setSession(data.data, 24, true); // 24 hours, remember = true
+      sessionManager.setSession({
+        token: response.data.token,
+        user: response.data.user
+      }, 24, true); // 24 hours, remember = true
 
       router.push('/dashboard');
-    } catch (error) {
-      console.error('Registration error:', error);
-      setError('An error occurred. Please try again.');
+    } catch (err: any) {
+      console.error('Registration error:', err);
+      setError(err.message || 'An error occurred. Please try again.');
       setIsLoading(false);
     }
   };

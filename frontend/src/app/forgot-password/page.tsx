@@ -6,6 +6,7 @@ import { Mail, Building2, ArrowRight, ArrowLeft, CheckCircle } from 'lucide-reac
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { authApi } from '@/lib/api/auth';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -25,26 +26,11 @@ export default function ForgotPasswordPage() {
     }
 
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-      const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // Don't reveal if email exists or not for security
-        // Still show success message
-      }
-
+      await authApi.forgotPassword({ email });
+      // Always show success for security (don't reveal if email exists)
       setIsSubmitted(true);
-    } catch (error) {
-      console.error('Forgot password error:', error);
+    } catch (err) {
+      console.error('Forgot password error:', err);
       // Still show success for security (don't reveal if email exists)
       setIsSubmitted(true);
     } finally {

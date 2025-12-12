@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSession } from '@/lib/session';
 import Sidebar from '@/components/dashboard/Sidebar';
+import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import { Toaster } from '@/components/ui/sonner';
 
 export default function DashboardLayout({
@@ -34,13 +35,19 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <main className="lg:pl-64">
-        <div className="pt-16 lg:pt-0">
-          <div className="p-4 lg:p-8">
-            {children}
-          </div>
+      <div className="lg:pl-64">
+        {/* Top navbar - hidden on mobile (mobile has its own header in Sidebar) */}
+        <div className="hidden lg:block">
+          <DashboardNavbar />
         </div>
-      </main>
+        <main>
+          <div className="pt-16 lg:pt-0">
+            <div className="p-4 lg:p-8">
+              {children}
+            </div>
+          </div>
+        </main>
+      </div>
       <Toaster />
     </div>
   );

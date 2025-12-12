@@ -24,22 +24,22 @@ export interface UpdateUnitData {
 export const unitsApi = {
   getByProperty: async (propertyId: string): Promise<Unit[]> => {
     const response = await apiClient.get(`/units/property/${propertyId}`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   getById: async (id: string): Promise<Unit> => {
     const response = await apiClient.get(`/units/${id}`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   create: async (data: CreateUnitData): Promise<Unit> => {
     const response = await apiClient.post('/units', data);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   update: async (id: string, data: UpdateUnitData): Promise<Unit> => {
     const response = await apiClient.put(`/units/${id}`, data);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   delete: async (id: string): Promise<void> => {

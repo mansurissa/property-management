@@ -36,24 +36,24 @@ export const profileApi = {
   // Get current user's profile
   getProfile: async (): Promise<UserProfile> => {
     const response = await apiClient.get<UserProfile>('/profile');
-    return response.data;
+    return response.data as UserProfile;
   },
 
   // Update profile
   updateProfile: async (data: UpdateProfileData): Promise<UserProfile> => {
     const response = await apiClient.put<UserProfile>('/profile', data);
-    return response.data;
+    return response.data as UserProfile;
   },
 
   // Change password
   changePassword: async (data: ChangePasswordData): Promise<{ success: boolean; message: string }> => {
     const response = await apiClient.post<{ success: boolean; message: string }>('/profile/change-password', data);
-    return response.data;
+    return response.data as { success: boolean; message: string };
   },
 
   // Delete account
   deleteAccount: async (password: string): Promise<{ success: boolean; message: string }> => {
     const response = await apiClient.delete<{ success: boolean; message: string }>('/profile');
-    return response.data;
+    return response.data as { success: boolean; message: string };
   }
 };

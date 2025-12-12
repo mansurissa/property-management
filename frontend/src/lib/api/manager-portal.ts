@@ -132,7 +132,7 @@ export const managerPortalApi = {
     const response = await apiClient.get<{ success: boolean; data: ManagerDashboard }>(
       '/manager-portal/dashboard'
     );
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   // Properties
@@ -140,14 +140,14 @@ export const managerPortalApi = {
     const response = await apiClient.get<{ success: boolean; data: ManagerProperty[] }>(
       '/manager-portal/properties'
     );
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   getPropertyById: async (propertyId: string): Promise<ManagerProperty> => {
     const response = await apiClient.get<{ success: boolean; data: ManagerProperty }>(
       `/manager-portal/properties/${propertyId}`
     );
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   // Tenants
@@ -155,7 +155,7 @@ export const managerPortalApi = {
     const response = await apiClient.get<{ success: boolean; data: ManagerTenant[] }>(
       `/manager-portal/properties/${propertyId}/tenants`
     );
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   // Payments
@@ -163,7 +163,7 @@ export const managerPortalApi = {
     const response = await apiClient.get<{ success: boolean; data: ManagerPayment[] }>(
       `/manager-portal/properties/${propertyId}/payments`
     );
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   // Maintenance
@@ -171,7 +171,7 @@ export const managerPortalApi = {
     const response = await apiClient.get<{ success: boolean; data: ManagerMaintenanceTicket[] }>(
       `/manager-portal/properties/${propertyId}/maintenance`
     );
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   // Profile
@@ -179,7 +179,7 @@ export const managerPortalApi = {
     const response = await apiClient.get<{ success: boolean; data: ManagerProfile }>(
       '/manager-portal/profile'
     );
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   updateProfile: async (data: { firstName?: string; lastName?: string; phone?: string }): Promise<ManagerProfile> => {
@@ -187,7 +187,7 @@ export const managerPortalApi = {
       '/manager-portal/profile',
       data
     );
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   changePassword: async (data: { currentPassword: string; newPassword: string }): Promise<void> => {

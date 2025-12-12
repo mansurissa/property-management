@@ -93,13 +93,13 @@ export const tenantPortalApi = {
   // Get dashboard data
   getDashboard: async (): Promise<DashboardData> => {
     const response = await apiClient.get<{ success: boolean; data: DashboardData }>('/tenant-portal/dashboard');
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   // Get tenant profile with unit info
   getProfile: async (): Promise<TenantProfile> => {
     const response = await apiClient.get<{ success: boolean; data: TenantProfile }>('/tenant-portal/profile');
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   // Get payment history
@@ -107,9 +107,10 @@ export const tenantPortalApi = {
     const response = await apiClient.get<{ success: boolean; data: Payment[]; pagination: any }>(
       `/tenant-portal/payments?page=${page}&limit=${limit}`
     );
+    const data = response.data as any;
     return {
-      data: response.data.data,
-      pagination: response.data.pagination
+      data: data.data,
+      pagination: data.pagination
     };
   },
 
@@ -119,16 +120,17 @@ export const tenantPortalApi = {
     if (status) url += `&status=${status}`;
 
     const response = await apiClient.get<{ success: boolean; data: MaintenanceTicket[]; pagination: any }>(url);
+    const data = response.data as any;
     return {
-      data: response.data.data,
-      pagination: response.data.pagination
+      data: data.data,
+      pagination: data.pagination
     };
   },
 
   // Get single maintenance ticket
   getMaintenanceTicket: async (id: string): Promise<MaintenanceTicket> => {
     const response = await apiClient.get<{ success: boolean; data: MaintenanceTicket }>(`/tenant-portal/maintenance/${id}`);
-    return response.data.data;
+    return (response.data as any).data;
   },
 
   // Create maintenance ticket
@@ -141,6 +143,6 @@ export const tenantPortalApi = {
       '/tenant-portal/maintenance',
       data
     );
-    return response.data.data;
+    return (response.data as any).data;
   }
 };

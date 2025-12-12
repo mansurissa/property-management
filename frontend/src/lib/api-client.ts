@@ -1,4 +1,5 @@
 import { ApiResponse, ApiError, RequestConfig } from '@/types/api';
+import { sessionManager } from '@/lib/session';
 
 class ApiClient {
   private baseURL: string;
@@ -15,8 +16,6 @@ class ApiClient {
 
   private getAuthToken(): string | null {
     if (typeof window === 'undefined') return null;
-    // Import sessionManager here to avoid circular imports
-    const { sessionManager } = require('@/lib/session');
     return sessionManager.getToken();
   }
 
@@ -74,10 +73,14 @@ class ApiClient {
         status: response.status,
         message: data?.message
       };
-    } catch (error) {
-      if (error instanceof Error && 'status' in error) {
+    } catch (error: any) {
+      // If this is already an ApiError we threw (from !response.ok), re-throw it
+      if (error && typeof error === 'object' && 'status' in error && error.status !== 0) {
         throw error as ApiError;
       }
+
+      // Log the actual error for debugging
+      console.error('API request failed:', url, error);
 
       throw {
         message:

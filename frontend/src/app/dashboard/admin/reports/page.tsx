@@ -48,8 +48,19 @@ export default function AdminReportsPage() {
   const loadStats = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get<DashboardStats>(`/api/admin/reports/dashboard?period=${period}`);
-      setStats(response);
+      const response = await apiClient.get<any>('/admin/stats');
+      const data = response.data as any;
+      const overview = data?.data?.overview || {};
+      setStats({
+        totalUsers: overview.totalUsers || 0,
+        totalProperties: overview.totalProperties || 0,
+        totalUnits: overview.totalUnits || 0,
+        occupiedUnits: overview.occupiedUnits || 0,
+        totalRevenue: overview.totalRevenue || 0,
+        pendingMaintenance: overview.pendingMaintenance || 0,
+        newUsersThisMonth: 0,
+        newPropertiesThisMonth: 0
+      });
     } catch (err: any) {
       console.error('Failed to load stats:', err);
       // Set default stats for demo
