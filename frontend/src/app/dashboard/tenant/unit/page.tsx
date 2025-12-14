@@ -5,6 +5,7 @@ import { tenantPortalApi, DashboardData } from '@/lib/api/tenant-portal';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 import {
   Home,
   Building2,
@@ -17,6 +18,7 @@ import {
 } from 'lucide-react';
 
 export default function TenantUnitPage() {
+  const { t, locale } = useLanguage();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -37,7 +39,7 @@ export default function TenantUnitPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-RW', {
+    return new Intl.NumberFormat(`${locale}-RW`, {
       style: 'currency',
       currency: 'RWF',
       minimumFractionDigits: 0
@@ -45,7 +47,7 @@ export default function TenantUnitPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-RW', {
+    return new Date(dateString).toLocaleDateString(`${locale}-RW`, {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -71,12 +73,12 @@ export default function TenantUnitPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">My Unit</h1>
-          <p className="text-muted-foreground">View your rental unit details</p>
+          <h1 className="text-3xl font-bold">{t('tenant.myUnit')}</h1>
+          <p className="text-muted-foreground">{t('tenant.viewUnitDetails')}</p>
         </div>
         <Card>
           <CardContent className="py-12">
-            <p className="text-center text-destructive">{error || 'No unit information available'}</p>
+            <p className="text-center text-destructive">{error || t('errors.noData')}</p>
           </CardContent>
         </Card>
       </div>
@@ -86,8 +88,8 @@ export default function TenantUnitPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">My Unit</h1>
-        <p className="text-muted-foreground">View your rental unit details</p>
+        <h1 className="text-3xl font-bold">{t('tenant.myUnit')}</h1>
+        <p className="text-muted-foreground">{t('tenant.viewUnitDetails')}</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -96,9 +98,9 @@ export default function TenantUnitPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Home className="h-5 w-5" />
-              Unit Information
+              {t('tenant.unitDetails')}
             </CardTitle>
-            <CardDescription>Details about your rented unit</CardDescription>
+            <CardDescription>{t('tenant.unitDetailsDesc')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
@@ -106,7 +108,7 @@ export default function TenantUnitPage() {
                 <Home className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Unit Number</p>
+                <p className="text-sm text-muted-foreground">{t('tenant.unitNumber')}</p>
                 <p className="text-xl font-bold">{data.unit?.unitNumber || 'N/A'}</p>
               </div>
             </div>
@@ -116,14 +118,14 @@ export default function TenantUnitPage() {
                 <DollarSign className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Monthly Rent</p>
+                <p className="text-sm text-muted-foreground">{t('tenant.monthlyRent')}</p>
                 <p className="text-xl font-bold text-green-600">{formatCurrency(data.rentAmount)}</p>
               </div>
             </div>
 
             <div className="pt-4 border-t">
               <Badge variant={data.currentMonthPaid ? 'default' : 'destructive'}>
-                {data.currentMonthPaid ? 'Current Month Paid' : 'Payment Due'}
+                {data.currentMonthPaid ? t('tenant.paid') : t('tenant.due')}
               </Badge>
             </div>
           </CardContent>
@@ -134,9 +136,9 @@ export default function TenantUnitPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
-              Property Information
+              {t('tenant.propertyDetails')}
             </CardTitle>
-            <CardDescription>About the property</CardDescription>
+            <CardDescription>{t('tenant.propertyDetailsDesc')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
@@ -144,7 +146,7 @@ export default function TenantUnitPage() {
                 <Building2 className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Property Name</p>
+                <p className="text-sm text-muted-foreground">{t('tenant.propertyName')}</p>
                 <p className="font-medium">{data.property?.name || 'N/A'}</p>
               </div>
             </div>
@@ -154,7 +156,7 @@ export default function TenantUnitPage() {
                 <MapPin className="h-5 w-5 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Address</p>
+                <p className="text-sm text-muted-foreground">{t('tenant.propertyAddress')}</p>
                 <p className="font-medium">{data.property?.address || 'N/A'}</p>
                 <p className="text-sm text-muted-foreground">{data.property?.city || ''}</p>
               </div>
@@ -167,20 +169,20 @@ export default function TenantUnitPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              Lease Information
+              {t('tenant.leaseInfo')}
             </CardTitle>
-            <CardDescription>Your lease period</CardDescription>
+            <CardDescription>{t('tenant.leaseInfoDesc')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-muted-foreground">Lease Start</p>
+                <p className="text-sm text-muted-foreground">{t('tenant.leaseStart')}</p>
                 <p className="font-medium">
                   {data.profile?.leaseStart ? formatDate(data.profile.leaseStart) : 'N/A'}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Lease End</p>
+                <p className="text-sm text-muted-foreground">{t('tenant.leaseEnd')}</p>
                 <p className="font-medium">
                   {data.profile?.leaseEnd ? formatDate(data.profile.leaseEnd) : 'N/A'}
                 </p>
@@ -194,17 +196,17 @@ export default function TenantUnitPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
-              Payment Summary
+              {t('tenant.paymentSummary')}
             </CardTitle>
-            <CardDescription>Your payment history overview</CardDescription>
+            <CardDescription>{t('tenant.paymentHistoryOverview')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-4 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">Total Paid</p>
+              <p className="text-sm text-muted-foreground">{t('tenant.totalPaid')}</p>
               <p className="text-2xl font-bold">{formatCurrency(data.totalPaid)}</p>
             </div>
             <div className="p-4 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">Current Period</p>
+              <p className="text-sm text-muted-foreground">{t('tenant.currentPeriod')}</p>
               <p className="font-medium">
                 {data.currentPeriod.month}/{data.currentPeriod.year}
               </p>

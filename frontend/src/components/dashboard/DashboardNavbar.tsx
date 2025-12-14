@@ -27,6 +27,7 @@ import {
 import { cn } from '@/lib/utils';
 import { clearSession, sessionManager } from '@/lib/session';
 import { notificationsApi, Notification } from '@/lib/api/notifications';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 type UserRole = 'super_admin' | 'agency' | 'owner' | 'manager' | 'tenant' | 'maintenance' | 'agent';
 
@@ -195,6 +196,9 @@ export default function DashboardNavbar() {
 
   return (
     <div className="sticky top-0 z-20 flex h-16 items-center justify-end gap-4 border-b bg-background px-4 lg:px-8">
+      {/* Language Switcher */}
+      <LanguageSwitcher />
+
       {/* Notifications Dropdown */}
       <DropdownMenu onOpenChange={(open) => open && fetchNotifications()}>
         <DropdownMenuTrigger asChild>
@@ -291,18 +295,14 @@ export default function DashboardNavbar() {
               ))
             )}
           </div>
-          {notifications.length > 0 && (
-            <>
-              <DropdownMenuSeparator />
-              <Link
-                href="/dashboard/notifications"
-                className="flex items-center justify-center gap-1 px-2 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                View all notifications
-                <ExternalLink className="h-3 w-3" />
-              </Link>
-            </>
-          )}
+          <DropdownMenuSeparator />
+          <Link
+            href="/dashboard/notifications"
+            className="flex items-center justify-center gap-1 px-2 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            View all notifications
+            <ExternalLink className="h-3 w-3" />
+          </Link>
         </DropdownMenuContent>
       </DropdownMenu>
 

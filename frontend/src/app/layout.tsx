@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { poppins } from '@/lib/fonts';
 import './globals.css';
+import { LanguageProvider } from '@/lib/i18n/LanguageContext';
 
 export const metadata: Metadata = {
   title: 'Renta',
@@ -24,7 +25,9 @@ export default function RootLayout({
       <body
         className={`${poppins.variable} font-poppins antialiased`}
       >
-        {children}
+        <LanguageProvider>
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );

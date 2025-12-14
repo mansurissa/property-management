@@ -27,6 +27,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { clearSession, sessionManager } from '@/lib/session';
 import { useRouter } from 'next/navigation';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 type UserRole = 'super_admin' | 'agency' | 'owner' | 'manager' | 'tenant' | 'maintenance' | 'agent';
 
@@ -285,6 +286,10 @@ export default function Sidebar() {
           </nav>
 
           <div className="border-t border-sidebar-border p-4 space-y-1">
+            {/* Mobile-only: Language Switcher */}
+            <div className="px-3 py-2.5">
+              <LanguageSwitcher />
+            </div>
             {/* Mobile-only: Notifications link */}
             <Link
               href="/dashboard/notifications"

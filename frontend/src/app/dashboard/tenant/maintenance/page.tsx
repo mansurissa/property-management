@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 import {
   Dialog,
   DialogContent,
@@ -38,6 +39,7 @@ import {
 } from 'lucide-react';
 
 export default function TenantMaintenancePage() {
+  const { t, locale } = useLanguage();
   const [tickets, setTickets] = useState<MaintenanceTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -78,7 +80,7 @@ export default function TenantMaintenancePage() {
 
   const handleCreateTicket = async () => {
     if (!newTicket.category || !newTicket.description) {
-      setCreateError('Please fill in all required fields');
+      setCreateError(t('tenant.fillRequired'));
       return;
     }
 
@@ -97,7 +99,7 @@ export default function TenantMaintenancePage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-RW', {
+    return new Date(dateString).toLocaleDateString(`${locale}-RW`, {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -110,28 +112,28 @@ export default function TenantMaintenancePage() {
         return (
           <Badge className="bg-yellow-100 text-yellow-700">
             <Clock className="h-3 w-3 mr-1" />
-            Pending
+            {t('common.pending')}
           </Badge>
         );
       case 'in_progress':
         return (
           <Badge className="bg-blue-100 text-blue-700">
             <Loader2 className="h-3 w-3 mr-1" />
-            In Progress
+            {t('tenant.inProgress')}
           </Badge>
         );
       case 'completed':
         return (
           <Badge className="bg-green-100 text-green-700">
             <CheckCircle className="h-3 w-3 mr-1" />
-            Completed
+            {t('common.completed')}
           </Badge>
         );
       case 'cancelled':
         return (
           <Badge className="bg-red-100 text-red-700">
             <XCircle className="h-3 w-3 mr-1" />
-            Cancelled
+            {t('tenant.cancelled')}
           </Badge>
         );
       default:
@@ -142,13 +144,13 @@ export default function TenantMaintenancePage() {
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
       case 'urgent':
-        return <Badge variant="destructive">Urgent</Badge>;
+        return <Badge variant="destructive">{t('tenant.urgent')}</Badge>;
       case 'high':
-        return <Badge className="bg-orange-100 text-orange-700">High</Badge>;
+        return <Badge className="bg-orange-100 text-orange-700">{t('tenant.high')}</Badge>;
       case 'medium':
-        return <Badge className="bg-yellow-100 text-yellow-700">Medium</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-700">{t('tenant.medium')}</Badge>;
       case 'low':
-        return <Badge variant="secondary">Low</Badge>;
+        return <Badge variant="secondary">{t('tenant.low')}</Badge>;
       default:
         return <Badge variant="secondary">{priority}</Badge>;
     }
@@ -185,21 +187,21 @@ export default function TenantMaintenancePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Maintenance Requests</h1>
-          <p className="text-muted-foreground">Submit and track maintenance tickets</p>
+          <h1 className="text-3xl font-bold">{t('tenant.maintenanceRequests')}</h1>
+          <p className="text-muted-foreground">{t('tenant.submitAndTrack')}</p>
         </div>
         <Dialog open={showNewTicketDialog} onOpenChange={setShowNewTicketDialog}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              New Request
+              {t('tenant.newRequest')}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Submit Maintenance Request</DialogTitle>
+              <DialogTitle>{t('tenant.submitRequest')}</DialogTitle>
               <DialogDescription>
-                Describe the issue and we'll get it fixed as soon as possible.
+                {t('tenant.describeIssue')}
               </DialogDescription>
             </DialogHeader>
 
@@ -211,26 +213,26 @@ export default function TenantMaintenancePage() {
               )}
 
               <div className="space-y-2">
-                <Label>Category *</Label>
+                <Label>{t('tenant.requestCategory')} *</Label>
                 <Select
                   value={newTicket.category}
                   onValueChange={(value) => setNewTicket({ ...newTicket, category: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
+                    <SelectValue placeholder={t('tenant.selectCategory')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="plumbing">🔧 Plumbing</SelectItem>
-                    <SelectItem value="electrical">⚡ Electrical</SelectItem>
-                    <SelectItem value="structural">🏗️ Structural</SelectItem>
-                    <SelectItem value="appliance">🔌 Appliance</SelectItem>
-                    <SelectItem value="other">🛠️ Other</SelectItem>
+                    <SelectItem value="plumbing">🔧 {t('tenant.plumbing')}</SelectItem>
+                    <SelectItem value="electrical">⚡ {t('tenant.electrical')}</SelectItem>
+                    <SelectItem value="structural">🏗️ {t('tenant.structural')}</SelectItem>
+                    <SelectItem value="appliance">🔌 {t('tenant.appliance')}</SelectItem>
+                    <SelectItem value="other">🛠️ {t('tenant.other')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>Priority</Label>
+                <Label>{t('tenant.requestPriority')}</Label>
                 <Select
                   value={newTicket.priority}
                   onValueChange={(value) => setNewTicket({ ...newTicket, priority: value })}
@@ -239,18 +241,18 @@ export default function TenantMaintenancePage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
+                    <SelectItem value="low">{t('tenant.low')}</SelectItem>
+                    <SelectItem value="medium">{t('tenant.medium')}</SelectItem>
+                    <SelectItem value="high">{t('tenant.high')}</SelectItem>
+                    <SelectItem value="urgent">{t('tenant.urgent')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>Description *</Label>
+                <Label>{t('tenant.requestDescription')} *</Label>
                 <Textarea
-                  placeholder="Describe the issue in detail..."
+                  placeholder={t('tenant.describeInDetail')}
                   value={newTicket.description}
                   onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
                   rows={4}
@@ -260,16 +262,16 @@ export default function TenantMaintenancePage() {
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowNewTicketDialog(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button onClick={handleCreateTicket} disabled={creating}>
                 {creating ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Submitting...
+                    {t('tenant.submitting')}
                   </>
                 ) : (
-                  'Submit Request'
+                  t('tenant.submitRequest')
                 )}
               </Button>
             </DialogFooter>
@@ -281,14 +283,14 @@ export default function TenantMaintenancePage() {
       <div className="flex gap-4">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="All statuses" />
+            <SelectValue placeholder={t('tenant.allStatuses')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="in_progress">In Progress</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
+            <SelectItem value="all">{t('tenant.allStatuses')}</SelectItem>
+            <SelectItem value="pending">{t('common.pending')}</SelectItem>
+            <SelectItem value="in_progress">{t('tenant.inProgress')}</SelectItem>
+            <SelectItem value="completed">{t('common.completed')}</SelectItem>
+            <SelectItem value="cancelled">{t('tenant.cancelled')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -297,10 +299,10 @@ export default function TenantMaintenancePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Wrench className="h-5 w-5" />
-            Maintenance Tickets
+            {t('tenant.maintenanceTickets')}
           </CardTitle>
           <CardDescription>
-            {pagination.total} ticket{pagination.total !== 1 ? 's' : ''} found
+            {pagination.total} {pagination.total === 1 ? t('tenant.ticketFound') : t('tenant.ticketsFound')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -309,9 +311,9 @@ export default function TenantMaintenancePage() {
           ) : tickets.length === 0 ? (
             <div className="text-center py-12">
               <Wrench className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No maintenance tickets found</p>
+              <p className="text-muted-foreground">{t('tenant.noMaintenanceTickets')}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Click "New Request" to submit a maintenance request
+                {t('tenant.clickNewRequest')}
               </p>
             </div>
           ) : (
@@ -334,10 +336,10 @@ export default function TenantMaintenancePage() {
                           {ticket.description}
                         </p>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span>Created: {formatDate(ticket.createdAt)}</span>
+                          <span>{t('tenant.created')}: {formatDate(ticket.createdAt)}</span>
                           {ticket.assignee && (
                             <span>
-                              Assigned to: {ticket.assignee.firstName} {ticket.assignee.lastName}
+                              {t('tenant.assignedTo')}: {ticket.assignee.firstName} {ticket.assignee.lastName}
                             </span>
                           )}
                         </div>
@@ -351,7 +353,7 @@ export default function TenantMaintenancePage() {
               {pagination.totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4 pt-4 border-t">
                   <p className="text-sm text-muted-foreground">
-                    Page {pagination.page} of {pagination.totalPages}
+                    {t('common.page')} {pagination.page} {t('common.of')} {pagination.totalPages}
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -361,7 +363,7 @@ export default function TenantMaintenancePage() {
                       disabled={pagination.page <= 1 || loading}
                     >
                       <ChevronLeft className="h-4 w-4 mr-1" />
-                      Previous
+                      {t('common.previous')}
                     </Button>
                     <Button
                       variant="outline"
@@ -369,7 +371,7 @@ export default function TenantMaintenancePage() {
                       onClick={() => loadTickets(pagination.page + 1)}
                       disabled={pagination.page >= pagination.totalPages || loading}
                     >
-                      Next
+                      {t('common.next')}
                       <ChevronRight className="h-4 w-4 ml-1" />
                     </Button>
                   </div>

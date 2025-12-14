@@ -1,5 +1,9 @@
+'use client';
+
 import ProfilePage from '@/components/profile/ProfilePage';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 export default function TenantProfilePage() {
-  return <ProfilePage title="My Profile" />;
+  const { t } = useLanguage();
+  return <ProfilePage title={t('profile.myProfile')} />;
 }

@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 import {
   Table,
   TableBody,
@@ -25,6 +26,7 @@ import {
 } from 'lucide-react';
 
 export default function TenantPaymentsPage() {
+  const { t, locale } = useLanguage();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -53,7 +55,7 @@ export default function TenantPaymentsPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-RW', {
+    return new Intl.NumberFormat(`${locale}-RW`, {
       style: 'currency',
       currency: 'RWF',
       minimumFractionDigits: 0
@@ -61,7 +63,7 @@ export default function TenantPaymentsPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-RW', {
+    return new Date(dateString).toLocaleDateString(`${locale}-RW`, {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -74,21 +76,21 @@ export default function TenantPaymentsPage() {
         return (
           <Badge className="bg-green-100 text-green-700">
             <CheckCircle className="h-3 w-3 mr-1" />
-            Completed
+            {t('common.completed')}
           </Badge>
         );
       case 'pending':
         return (
           <Badge className="bg-yellow-100 text-yellow-700">
             <Clock className="h-3 w-3 mr-1" />
-            Pending
+            {t('common.pending')}
           </Badge>
         );
       case 'failed':
         return (
           <Badge className="bg-red-100 text-red-700">
             <XCircle className="h-3 w-3 mr-1" />
-            Failed
+            {t('tenant.paymentFailed')}
           </Badge>
         );
       default:
@@ -116,18 +118,18 @@ export default function TenantPaymentsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Payment History</h1>
-        <p className="text-muted-foreground">View all your rent payments</p>
+        <h1 className="text-3xl font-bold">{t('tenant.paymentHistory')}</h1>
+        <p className="text-muted-foreground">{t('tenant.viewAllPayments')}</p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
-            Payments
+            {t('nav.payments')}
           </CardTitle>
           <CardDescription>
-            Your complete payment history ({pagination.total} total)
+            {t('tenant.completePaymentHistory')} ({pagination.total} {t('common.total')})
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -136,18 +138,18 @@ export default function TenantPaymentsPage() {
           ) : payments.length === 0 ? (
             <div className="text-center py-12">
               <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No payments found</p>
+              <p className="text-muted-foreground">{t('tenant.noPaymentsFound')}</p>
             </div>
           ) : (
             <>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Period</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Payment Date</TableHead>
-                    <TableHead>Method</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>{t('tenant.paymentPeriod')}</TableHead>
+                    <TableHead>{t('common.amount')}</TableHead>
+                    <TableHead>{t('tenant.paymentDate')}</TableHead>
+                    <TableHead>{t('tenant.paymentMethod')}</TableHead>
+                    <TableHead>{t('common.status')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -178,7 +180,7 @@ export default function TenantPaymentsPage() {
               {pagination.totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4 pt-4 border-t">
                   <p className="text-sm text-muted-foreground">
-                    Page {pagination.page} of {pagination.totalPages}
+                    {t('common.page')} {pagination.page} {t('common.of')} {pagination.totalPages}
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -188,7 +190,7 @@ export default function TenantPaymentsPage() {
                       disabled={pagination.page <= 1 || loading}
                     >
                       <ChevronLeft className="h-4 w-4 mr-1" />
-                      Previous
+                      {t('common.previous')}
                     </Button>
                     <Button
                       variant="outline"
@@ -196,7 +198,7 @@ export default function TenantPaymentsPage() {
                       onClick={() => loadPayments(pagination.page + 1)}
                       disabled={pagination.page >= pagination.totalPages || loading}
                     >
-                      Next
+                      {t('common.next')}
                       <ChevronRight className="h-4 w-4 ml-1" />
                     </Button>
                   </div>

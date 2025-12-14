@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -43,6 +44,7 @@ interface ProfilePageProps {
 }
 
 export default function ProfilePage({ title = 'Profile', showDeleteAccount = true }: ProfilePageProps) {
+  const { t, locale } = useLanguage();
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -110,7 +112,7 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
 
       const updated = await profileApi.updateProfile(updateData);
       setProfile(prev => prev ? { ...prev, ...updated } : prev);
-      setSaveSuccess('Profile updated successfully');
+      setSaveSuccess(t('profile.profileUpdated'));
       setEditMode(false);
       setTimeout(() => setSaveSuccess(''), 3000);
     } catch (err: any) {
@@ -122,12 +124,12 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
 
   const handleChangePassword = async () => {
     if (newPassword !== confirmPassword) {
-      setPasswordError('Passwords do not match');
+      setPasswordError(t('profile.passwordsNoMatch'));
       return;
     }
 
     if (newPassword.length < 6) {
-      setPasswordError('Password must be at least 6 characters');
+      setPasswordError(t('profile.passwordTooShort'));
       return;
     }
 
@@ -140,7 +142,7 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
         currentPassword,
         newPassword
       });
-      setPasswordSuccess('Password changed successfully');
+      setPasswordSuccess(t('profile.passwordChanged'));
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -155,7 +157,7 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
 
   const handleDeleteAccount = async () => {
     if (!deletePassword) {
-      setDeleteError('Please enter your password');
+      setDeleteError(t('profile.enterPasswordPlease'));
       return;
     }
 
@@ -173,7 +175,7 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-RW', {
+    return new Date(dateString).toLocaleDateString(`${locale}-RW`, {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -224,7 +226,7 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
   if (error || !profile) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-destructive">{error || 'Profile not found'}</p>
+        <p className="text-destructive">{error || t('profile.profileNotFound')}</p>
       </div>
     );
   }
@@ -233,7 +235,7 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">{title}</h1>
-        <p className="text-muted-foreground">Manage your account settings</p>
+        <p className="text-muted-foreground">{t('profile.manageAccount')}</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -242,9 +244,9 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              Personal Information
+              {t('profile.personalInfo')}
             </CardTitle>
-            <CardDescription>Update your personal details</CardDescription>
+            <CardDescription>{t('profile.updateDetails')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {saveSuccess && (
@@ -261,7 +263,7 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
             {editMode ? (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
+                  <Label htmlFor="firstName">{t('profile.firstName')}</Label>
                   <Input
                     id="firstName"
                     value={firstName}
@@ -269,7 +271,7 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
+                  <Label htmlFor="lastName">{t('profile.lastName')}</Label>
                   <Input
                     id="lastName"
                     value={lastName}
@@ -277,7 +279,7 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="phone">{t('profile.phone')}</Label>
                   <Input
                     id="phone"
                     value={phone}
@@ -286,12 +288,12 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
                 </div>
                 {profile?.role !== 'super_admin' && (
                   <div className="space-y-2">
-                    <Label htmlFor="nationalId">National ID</Label>
+                    <Label htmlFor="nationalId">{t('profile.nationalId')}</Label>
                     <Input
                       id="nationalId"
                       value={nationalId}
                       onChange={(e) => setNationalId(e.target.value)}
-                      placeholder="Enter your national ID"
+                      placeholder={t('profile.enterNationalId')}
                     />
                   </div>
                 )}
@@ -300,17 +302,17 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
                     {saving ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Saving...
+                        {t('profile.saving')}
                       </>
                     ) : (
                       <>
                         <Save className="h-4 w-4 mr-2" />
-                        Save Changes
+                        {t('profile.saveChanges')}
                       </>
                     )}
                   </Button>
                   <Button variant="outline" onClick={() => setEditMode(false)}>
-                    Cancel
+                    {t('common.cancel')}
                   </Button>
                 </div>
               </>
@@ -322,36 +324,36 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
                     <span>{profile.email}</span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground text-sm">Name:</span>
+                    <span className="text-muted-foreground text-sm">{t('profile.name')}:</span>
                     <p className="font-medium">
                       {profile.firstName && profile.lastName
                         ? `${profile.firstName} ${profile.lastName}`
-                        : 'Not set'}
+                        : t('profile.notSet')}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{profile.phone || 'Not set'}</span>
+                    <span>{profile.phone || t('profile.notSet')}</span>
                   </div>
                   {profile.role !== 'super_admin' && (
                     <div className="flex items-center gap-2">
                       <CreditCard className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <span className="text-muted-foreground text-sm">National ID: </span>
-                        <span>{profile.nationalId || 'Not set'}</span>
+                        <span className="text-muted-foreground text-sm">{t('profile.nationalId')}: </span>
+                        <span>{profile.nationalId || t('profile.notSet')}</span>
                       </div>
                     </div>
                   )}
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">
-                      Joined {formatDate(profile.createdAt)}
+                      {t('profile.joined')} {formatDate(profile.createdAt)}
                     </span>
                   </div>
                 </div>
                 <Button variant="outline" onClick={() => setEditMode(true)}>
                   <Edit2 className="h-4 w-4 mr-2" />
-                  Edit Profile
+                  {t('profile.editProfile')}
                 </Button>
               </>
             )}
@@ -363,12 +365,12 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              Account Overview
+              {t('profile.accountOverview')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-4 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">Role</p>
+              <p className="text-sm text-muted-foreground">{t('profile.role')}</p>
               <div className="mt-1">{getRoleBadge(profile.role)}</div>
             </div>
 
@@ -377,7 +379,7 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
               <div className="p-4 bg-muted rounded-lg">
                 <div className="flex items-center gap-2">
                   <Building2 className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Properties Owned</p>
+                  <p className="text-sm text-muted-foreground">{t('profile.propertiesOwned')}</p>
                 </div>
                 <p className="text-3xl font-bold mt-1">{profile.propertiesOwned}</p>
               </div>
@@ -387,7 +389,7 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
               <div className="p-4 bg-muted rounded-lg">
                 <div className="flex items-center gap-2">
                   <Building2 className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Properties Managed</p>
+                  <p className="text-sm text-muted-foreground">{t('profile.propertiesManaged')}</p>
                 </div>
                 <p className="text-3xl font-bold mt-1">{profile.propertiesManaged}</p>
               </div>
@@ -398,26 +400,26 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
                 <div className="p-4 bg-muted rounded-lg">
                   <div className="flex items-center gap-2">
                     <Activity className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Total Transactions</p>
+                    <p className="text-sm text-muted-foreground">{t('profile.totalTransactions')}</p>
                   </div>
                   <p className="text-3xl font-bold mt-1">{profile.transactionCount || 0}</p>
                 </div>
                 <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg">
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-4 w-4 text-green-600" />
-                    <p className="text-sm text-green-600">Total Earned</p>
+                    <p className="text-sm text-green-600">{t('profile.totalEarned')}</p>
                   </div>
                   <p className="text-2xl font-bold text-green-600 mt-1">
-                    {new Intl.NumberFormat('en-RW', { style: 'currency', currency: 'RWF', minimumFractionDigits: 0 }).format(profile.totalEarned || 0)}
+                    {new Intl.NumberFormat(`${locale}-RW`, { style: 'currency', currency: 'RWF', minimumFractionDigits: 0 }).format(profile.totalEarned || 0)}
                   </p>
                 </div>
               </>
             )}
 
             <div className="p-4 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">Account Status</p>
+              <p className="text-sm text-muted-foreground">{t('profile.accountStatus')}</p>
               <Badge className={profile.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
-                {profile.isActive ? 'Active' : 'Inactive'}
+                {profile.isActive ? t('common.active') : t('common.inactive')}
               </Badge>
             </div>
           </CardContent>
@@ -429,9 +431,9 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Lock className="h-5 w-5" />
-            Password
+            {t('profile.password')}
           </CardTitle>
-          <CardDescription>Change your account password</CardDescription>
+          <CardDescription>{t('profile.changePasswordDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
           {passwordSuccess && (
@@ -448,7 +450,7 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
                 </p>
               )}
               <div className="space-y-2">
-                <Label htmlFor="currentPassword">Current Password</Label>
+                <Label htmlFor="currentPassword">{t('profile.currentPassword')}</Label>
                 <Input
                   id="currentPassword"
                   type="password"
@@ -457,7 +459,7 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="newPassword">New Password</Label>
+                <Label htmlFor="newPassword">{t('profile.newPassword')}</Label>
                 <Input
                   id="newPassword"
                   type="password"
@@ -466,7 +468,7 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <Label htmlFor="confirmPassword">{t('profile.confirmPassword')}</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
@@ -479,10 +481,10 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
                   {passwordSaving ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Changing...
+                      {t('profile.changing')}
                     </>
                   ) : (
-                    'Change Password'
+                    t('profile.changePassword')
                   )}
                 </Button>
                 <Button
@@ -495,13 +497,13 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
                     setConfirmPassword('');
                   }}
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
               </div>
             </div>
           ) : (
             <Button variant="outline" onClick={() => setShowPasswordForm(true)}>
-              Change Password
+              {t('profile.changePassword')}
             </Button>
           )}
         </CardContent>
@@ -513,41 +515,40 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-destructive">
               <Trash2 className="h-5 w-5" />
-              Delete Account
+              {t('profile.deleteAccount')}
             </CardTitle>
             <CardDescription>
-              Permanently delete your account and all associated data
+              {t('profile.deleteAccountDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Once you delete your account, there is no going back. All your data will be permanently removed.
+              {t('profile.deleteAccountWarning')}
             </p>
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive">
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Account
+                  {t('profile.deleteAccount')}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogTitle>{t('profile.areYouSure')}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete your account
-                    and remove all your data from our servers.
+                    {t('profile.deleteConfirmation')}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="py-4">
-                  <Label htmlFor="deletePassword">Enter your password to confirm</Label>
+                  <Label htmlFor="deletePassword">{t('profile.enterPassword')}</Label>
                   <Input
                     id="deletePassword"
                     type="password"
                     className="mt-2"
                     value={deletePassword}
                     onChange={(e) => setDeletePassword(e.target.value)}
-                    placeholder="Your password"
+                    placeholder={t('profile.yourPassword')}
                   />
                   {deleteError && (
                     <p className="text-sm text-destructive mt-2">{deleteError}</p>
@@ -558,7 +559,7 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
                     setDeletePassword('');
                     setDeleteError('');
                   }}>
-                    Cancel
+                    {t('common.cancel')}
                   </AlertDialogCancel>
                   <Button
                     variant="destructive"
@@ -568,10 +569,10 @@ export default function ProfilePage({ title = 'Profile', showDeleteAccount = tru
                     {deleting ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Deleting...
+                        {t('profile.deleting')}
                       </>
                     ) : (
-                      'Delete Account'
+                      t('profile.deleteAccount')
                     )}
                   </Button>
                 </AlertDialogFooter>

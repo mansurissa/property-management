@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { sessionManager } from '@/lib/session';
 import Link from 'next/link';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 import {
   Building2,
   Users,
@@ -56,6 +57,7 @@ const getWelcomeMessage = (role: UserRole | null): string => {
 };
 
 export default function DashboardPage() {
+  const { t, locale } = useLanguage();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [tenantData, setTenantData] = useState<TenantDashboardData | null>(null);
   const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
@@ -142,7 +144,7 @@ export default function DashboardPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-RW', {
+    return new Intl.NumberFormat(`${locale}-RW`, {
       style: 'currency',
       currency: 'RWF',
       minimumFractionDigits: 0
@@ -150,7 +152,7 @@ export default function DashboardPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-RW', {
+    return new Date(dateString).toLocaleDateString(`${locale}-RW`, {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
@@ -506,7 +508,7 @@ export default function DashboardPage() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">My Unit</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t('tenant.myUnit')}</CardTitle>
                   <Home className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -517,18 +519,18 @@ export default function DashboardPage() {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Monthly Rent</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t('tenant.monthlyRent')}</CardTitle>
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{formatCurrency(tenantData.rentAmount)}</div>
-                  <p className="text-xs text-muted-foreground">Due monthly</p>
+                  <p className="text-xs text-muted-foreground">{t('tenant.dueMonthly')}</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">This Month</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t('tenant.thisMonth')}</CardTitle>
                   {tenantData.currentMonthPaid ? (
                     <CheckCircle className="h-4 w-4 text-green-500" />
                   ) : (
@@ -537,7 +539,7 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {tenantData.currentMonthPaid ? 'Paid' : 'Due'}
+                    {tenantData.currentMonthPaid ? t('tenant.paid') : t('tenant.due')}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {tenantData.currentPeriod.month}/{tenantData.currentPeriod.year}
@@ -547,12 +549,12 @@ export default function DashboardPage() {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Maintenance</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t('common.maintenance')}</CardTitle>
                   <Wrench className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{tenantData.maintenanceTickets?.length || 0}</div>
-                  <p className="text-xs text-muted-foreground">Active tickets</p>
+                  <p className="text-xs text-muted-foreground">{t('tenant.activeTickets')}</p>
                 </CardContent>
               </Card>
             </div>
