@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Mail, Lock, Eye, EyeOff, Building2, ArrowRight } from 'lucide-react';
@@ -9,8 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { sessionManager } from '@/lib/session';
 import { authApi } from '@/lib/api/auth';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 export default function LoginPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
@@ -19,6 +21,15 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
+
+  useEffect(() => {
+    // Check if user was redirected due to session expiration
+    const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+    if (redirectPath) {
+      setSessionExpired(true);
+    }
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -34,7 +45,7 @@ export default function LoginPage() {
     setError('');
 
     if (!formData.email || !formData.password) {
-      setError('Please fill in all fields');
+      setError(t('auth.fillAllFields'));
       setIsLoading(false);
       return;
     }
@@ -46,7 +57,7 @@ export default function LoginPage() {
       });
 
       if (!response.success) {
-        setError(response.message || 'Login failed. Please try again.');
+        setError(response.message || t('auth.loginFailed'));
         setIsLoading(false);
         return;
       }
@@ -57,10 +68,17 @@ export default function LoginPage() {
         user: response.data.user
       }, 24, true); // 24 hours, remember = true
 
-      router.push('/dashboard');
+      // Redirect to the page they were trying to access, or dashboard
+      const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+      if (redirectPath) {
+        sessionStorage.removeItem('redirectAfterLogin');
+        router.push(redirectPath);
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.message || 'An error occurred. Please try again.');
+      setError(err.message || t('auth.errorOccurred'));
       setIsLoading(false);
     }
   };
@@ -87,20 +105,20 @@ export default function LoginPage() {
           {/* Main Content */}
           <div className="space-y-6">
             <h1 className="text-4xl lg:text-5xl font-bold text-white leading-tight">
-              Manage your properties
+              {t('auth.manageProperties')}
               <br />
-              <span className="text-[#D3DAD9]">with ease</span>
+              <span className="text-[#D3DAD9]">{t('auth.withEase')}</span>
             </h1>
             <p className="text-lg text-white/70 max-w-md">
-              Track tenants, collect rent, and handle maintenance requests - all from one simple dashboard.
+              {t('auth.platformSubtitle')}
             </p>
 
             {/* Features */}
             <div className="space-y-4 pt-6">
               {[
-                'Track multiple properties and units',
-                'Record payments via Cash, MoMo, or Bank',
-                'Manage maintenance tickets efficiently'
+                t('auth.featureBullet1'),
+                t('auth.featureBullet2'),
+                t('auth.featureBullet3')
               ].map((feature, index) => (
                 <div key={index} className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-[#715A5A] flex items-center justify-center">
@@ -116,7 +134,7 @@ export default function LoginPage() {
 
           {/* Footer */}
           <p className="text-white/50 text-sm">
-            &copy; {new Date().getFullYear()} Renta. Built for Rwandan landlords.
+            &copy; {new Date().getFullYear()} Renta. {t('auth.builtForRwanda')}.
           </p>
         </div>
       </div>
@@ -134,11 +152,18 @@ export default function LoginPage() {
 
           {/* Header */}
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-[#37353E]">Welcome back</h2>
+            <h2 className="text-2xl font-bold text-[#37353E]">{t('auth.welcomeBack')}</h2>
             <p className="mt-2 text-[#44444E]">
-              Enter your credentials to access your account
+              {t('auth.enterCredentials')}
             </p>
           </div>
+
+          {/* Session Expired Message */}
+          {sessionExpired && (
+            <div className="mb-6 p-4 bg-amber-50 border border-amber-100 rounded-xl">
+              <p className="text-sm text-amber-700">{t('auth.sessionExpiredMessage')}</p>
+            </div>
+          )}
 
           {/* Error Message */}
           {error && (
@@ -151,7 +176,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-[#37353E] font-medium">
-                Email address
+                {t('auth.emailAddress')}
               </Label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#44444E]/50" />
@@ -164,14 +189,14 @@ export default function LoginPage() {
                   value={formData.email}
                   onChange={handleChange}
                   className="pl-12 h-12 bg-[#F8F9FA] border-[#E5E7EB] rounded-xl focus:bg-white focus:border-[#715A5A] focus:ring-[#715A5A]/20 transition-all"
-                  placeholder="name@example.com"
+                  placeholder={t('auth.emailPlaceholder')}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="password" className="text-[#37353E] font-medium">
-                Password
+                {t('auth.password')}
               </Label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#44444E]/50" />
@@ -184,7 +209,7 @@ export default function LoginPage() {
                   value={formData.password}
                   onChange={handleChange}
                   className="pl-12 pr-12 h-12 bg-[#F8F9FA] border-[#E5E7EB] rounded-xl focus:bg-white focus:border-[#715A5A] focus:ring-[#715A5A]/20 transition-all"
-                  placeholder="Enter your password"
+                  placeholder={t('auth.passwordPlaceholder')}
                 />
                 <button
                   type="button"
@@ -206,13 +231,13 @@ export default function LoginPage() {
                   type="checkbox"
                   className="w-4 h-4 rounded border-[#E5E7EB] text-[#715A5A] focus:ring-[#715A5A]/20"
                 />
-                <span className="text-sm text-[#44444E]">Remember me</span>
+                <span className="text-sm text-[#44444E]">{t('auth.rememberMe')}</span>
               </label>
               <Link
                 href="/forgot-password"
                 className="text-sm font-medium text-[#715A5A] hover:text-[#5a4848] transition-colors"
               >
-                Forgot password?
+                {t('auth.forgotPassword')}
               </Link>
             </div>
 
@@ -225,7 +250,7 @@ export default function LoginPage() {
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  Sign in
+                  {t('auth.signInBtn')}
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
@@ -238,7 +263,7 @@ export default function LoginPage() {
               <div className="w-full border-t border-[#E5E7EB]" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-[#44444E]">New to Renta?</span>
+              <span className="px-4 bg-white text-[#44444E]">{t('auth.newToRenta')}</span>
             </div>
           </div>
 
@@ -247,14 +272,14 @@ export default function LoginPage() {
             href="/signup"
             className="flex items-center justify-center gap-2 w-full h-12 border-2 border-[#E5E7EB] hover:border-[#715A5A] text-[#37353E] rounded-xl font-medium transition-all group"
           >
-            Create an account
+            {t('auth.createAccount')}
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Link>
 
           {/* Back to Home */}
           <p className="mt-8 text-center text-sm text-[#44444E]">
             <Link href="/" className="hover:text-[#715A5A] transition-colors">
-              &larr; Back to home
+              &larr; {t('auth.backToHome')}
             </Link>
           </p>
         </div>

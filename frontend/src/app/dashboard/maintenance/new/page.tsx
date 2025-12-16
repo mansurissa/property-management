@@ -20,29 +20,15 @@ import {
 } from '@/components/ui/select';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-
-const categories = [
-  { value: 'plumbing', label: 'Plumbing' },
-  { value: 'electrical', label: 'Electrical' },
-  { value: 'structural', label: 'Structural' },
-  { value: 'appliance', label: 'Appliance' },
-  { value: 'other', label: 'Other' },
-];
-
-const priorities = [
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
-  { value: 'urgent', label: 'Urgent' },
-];
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 export default function NewMaintenancePage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<string>('');
   const [availableUnits, setAvailableUnits] = useState<Unit[]>([]);
-  const [tenants, setTenants] = useState<Tenant[]>([]);
   const [formData, setFormData] = useState<CreateMaintenanceData>({
     unitId: '',
     tenantId: undefined,
@@ -51,9 +37,23 @@ export default function NewMaintenancePage() {
     priority: 'medium',
   });
 
+  const categories = [
+    { value: 'plumbing', label: t('owner.plumbing') },
+    { value: 'electrical', label: t('owner.electrical') },
+    { value: 'structural', label: t('owner.structural') },
+    { value: 'appliance', label: t('owner.appliance') },
+    { value: 'other', label: t('owner.other') },
+  ];
+
+  const priorities = [
+    { value: 'low', label: t('tenant.low') },
+    { value: 'medium', label: t('tenant.medium') },
+    { value: 'high', label: t('tenant.high') },
+    { value: 'urgent', label: t('tenant.urgent') },
+  ];
+
   useEffect(() => {
     loadProperties();
-    loadTenants();
   }, []);
 
   useEffect(() => {
@@ -78,17 +78,7 @@ export default function NewMaintenancePage() {
       const data = await propertiesApi.getAll();
       setProperties(data);
     } catch (err) {
-      toast.error('Failed to load properties');
-      console.error(err);
-    }
-  };
-
-  const loadTenants = async () => {
-    try {
-      const data = await tenantsApi.getAll('active');
-      setTenants(data);
-    } catch (err) {
-      toast.error('Failed to load tenants');
+      toast.error(t('owner.failedToLoadProperties'));
       console.error(err);
     }
   };
@@ -97,17 +87,17 @@ export default function NewMaintenancePage() {
     e.preventDefault();
 
     if (!formData.unitId || !formData.category || !formData.description) {
-      toast.error('Please fill in all required fields');
+      toast.error(t('owner.fillRequired'));
       return;
     }
 
     setLoading(true);
     try {
       await maintenanceApi.create(formData);
-      toast.success('Maintenance ticket created successfully');
+      toast.success(t('owner.ticketCreatedSuccess'));
       router.push('/dashboard/maintenance');
     } catch (err) {
-      toast.error('Failed to create ticket');
+      toast.error(t('owner.failedToCreateTicket'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -123,9 +113,9 @@ export default function NewMaintenancePage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">New Maintenance Ticket</h1>
+          <h1 className="text-3xl font-bold">{t('owner.newMaintenanceTicket')}</h1>
           <p className="text-muted-foreground">
-            Report a maintenance issue
+            {t('owner.reportMaintenanceIssue')}
           </p>
         </div>
       </div>
@@ -133,18 +123,18 @@ export default function NewMaintenancePage() {
       <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
         <Card>
           <CardHeader>
-            <CardTitle>Location</CardTitle>
+            <CardTitle>{t('owner.location')}</CardTitle>
             <CardDescription>
-              Select the property and unit with the issue
+              {t('owner.selectPropertyAndUnit')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Property *</Label>
+                <Label>{t('owner.propertyRequired')}</Label>
                 <Select value={selectedProperty} onValueChange={setSelectedProperty}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select property" />
+                    <SelectValue placeholder={t('owner.selectProperty')} />
                   </SelectTrigger>
                   <SelectContent>
                     {properties.map((property) => (
@@ -156,19 +146,19 @@ export default function NewMaintenancePage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Unit *</Label>
+                <Label>{t('owner.unitRequired')}</Label>
                 <Select
                   value={formData.unitId}
                   onValueChange={(value) => setFormData({ ...formData, unitId: value })}
                   disabled={!selectedProperty}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={selectedProperty ? "Select unit" : "Select property first"} />
+                    <SelectValue placeholder={selectedProperty ? t('owner.selectUnit') : t('owner.selectPropertyFirst')} />
                   </SelectTrigger>
                   <SelectContent>
                     {availableUnits.map((unit) => (
                       <SelectItem key={unit.id} value={unit.id}>
-                        Unit {unit.unitNumber}
+                        {t('owner.unit')} {unit.unitNumber}
                         {unit.tenant && ` - ${unit.tenant.firstName} ${unit.tenant.lastName}`}
                       </SelectItem>
                     ))}
@@ -181,21 +171,21 @@ export default function NewMaintenancePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Issue Details</CardTitle>
+            <CardTitle>{t('owner.issueDetails')}</CardTitle>
             <CardDescription>
-              Describe the maintenance issue
+              {t('owner.describeMaintenanceIssue')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Category *</Label>
+                <Label>{t('owner.categoryRequired')}</Label>
                 <Select
                   value={formData.category}
                   onValueChange={(value: any) => setFormData({ ...formData, category: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
+                    <SelectValue placeholder={t('owner.selectCategory')} />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((cat) => (
@@ -207,13 +197,13 @@ export default function NewMaintenancePage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Priority</Label>
+                <Label>{t('owner.priorityLabel')}</Label>
                 <Select
                   value={formData.priority}
                   onValueChange={(value: any) => setFormData({ ...formData, priority: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select priority" />
+                    <SelectValue placeholder={t('owner.selectPriority')} />
                   </SelectTrigger>
                   <SelectContent>
                     {priorities.map((pri) => (
@@ -227,9 +217,9 @@ export default function NewMaintenancePage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Description *</Label>
+              <Label>{t('owner.descriptionRequired')}</Label>
               <Textarea
-                placeholder="Describe the maintenance issue in detail..."
+                placeholder={t('owner.descriptionDetailPlaceholder')}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={5}
@@ -241,10 +231,10 @@ export default function NewMaintenancePage() {
 
         <div className="flex gap-4">
           <Button type="submit" disabled={loading}>
-            {loading ? 'Creating...' : 'Create Ticket'}
+            {loading ? t('owner.creating') : t('owner.createTicketBtn')}
           </Button>
           <Button type="button" variant="outline" asChild>
-            <Link href="/dashboard/maintenance">Cancel</Link>
+            <Link href="/dashboard/maintenance">{t('common.cancel')}</Link>
           </Button>
         </div>
       </form>

@@ -19,8 +19,10 @@ import {
 } from '@/components/ui/select';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 export default function NewTenantPage() {
+  const { t, locale } = useLanguage();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [properties, setProperties] = useState<Property[]>([]);
@@ -59,7 +61,7 @@ export default function NewTenantPage() {
       const data = await propertiesApi.getAll();
       setProperties(data);
     } catch (err) {
-      toast.error('Failed to load properties');
+      toast.error(t('owner.failedToLoadProperties'));
       console.error(err);
     }
   };
@@ -68,17 +70,17 @@ export default function NewTenantPage() {
     e.preventDefault();
 
     if (!formData.firstName || !formData.lastName || !formData.phone) {
-      toast.error('Please fill in all required fields');
+      toast.error(t('owner.fillRequired'));
       return;
     }
 
     setLoading(true);
     try {
       await tenantsApi.create(formData);
-      toast.success('Tenant created successfully');
+      toast.success(t('owner.tenantCreatedSuccess'));
       router.push('/dashboard/tenants');
     } catch (err) {
-      toast.error('Failed to create tenant');
+      toast.error(t('owner.failedToCreateTenant'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -86,7 +88,7 @@ export default function NewTenantPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-RW', {
+    return new Intl.NumberFormat(`${locale}-RW`, {
       style: 'currency',
       currency: 'RWF',
       minimumFractionDigits: 0
@@ -102,9 +104,9 @@ export default function NewTenantPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">Add Tenant</h1>
+          <h1 className="text-3xl font-bold">{t('owner.addTenant')}</h1>
           <p className="text-muted-foreground">
-            Create a new tenant
+            {t('owner.createNewTenant')}
           </p>
         </div>
       </div>
@@ -112,28 +114,28 @@ export default function NewTenantPage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Personal Information</CardTitle>
+            <CardTitle>{t('owner.personalInformation')}</CardTitle>
             <CardDescription>
-              Enter the tenant&apos;s personal details
+              {t('owner.enterTenantDetails')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="firstName">First Name *</Label>
+                <Label htmlFor="firstName">{t('owner.firstNameLabel')}</Label>
                 <Input
                   id="firstName"
-                  placeholder="First name"
+                  placeholder={t('owner.firstNamePlaceholder')}
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name *</Label>
+                <Label htmlFor="lastName">{t('owner.lastNameLabel')}</Label>
                 <Input
                   id="lastName"
-                  placeholder="Last name"
+                  placeholder={t('owner.lastNamePlaceholder')}
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                   required
@@ -143,21 +145,21 @@ export default function NewTenantPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number *</Label>
+                <Label htmlFor="phone">{t('owner.phoneLabel')}</Label>
                 <Input
                   id="phone"
-                  placeholder="e.g., 0788123456"
+                  placeholder={t('owner.phonePlaceholder')}
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('owner.emailLabel')}</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="email@example.com"
+                  placeholder={t('owner.emailPlaceholder')}
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
@@ -165,10 +167,10 @@ export default function NewTenantPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="nationalId">National ID</Label>
+              <Label htmlFor="nationalId">{t('owner.nationalIdLabel')}</Label>
               <Input
                 id="nationalId"
-                placeholder="Rwanda National ID"
+                placeholder={t('owner.nationalIdPlaceholder')}
                 value={formData.nationalId}
                 onChange={(e) => setFormData({ ...formData, nationalId: e.target.value })}
               />
@@ -178,27 +180,27 @@ export default function NewTenantPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Emergency Contact</CardTitle>
+            <CardTitle>{t('owner.emergencyContact')}</CardTitle>
             <CardDescription>
-              Emergency contact information
+              {t('owner.emergencyContactInfo')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="emergencyContact">Contact Name</Label>
+                <Label htmlFor="emergencyContact">{t('owner.contactName')}</Label>
                 <Input
                   id="emergencyContact"
-                  placeholder="Contact name"
+                  placeholder={t('owner.contactNamePlaceholder')}
                   value={formData.emergencyContact}
                   onChange={(e) => setFormData({ ...formData, emergencyContact: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="emergencyPhone">Contact Phone</Label>
+                <Label htmlFor="emergencyPhone">{t('owner.contactPhone')}</Label>
                 <Input
                   id="emergencyPhone"
-                  placeholder="e.g., 0788123456"
+                  placeholder={t('owner.phonePlaceholder')}
                   value={formData.emergencyPhone}
                   onChange={(e) => setFormData({ ...formData, emergencyPhone: e.target.value })}
                 />
@@ -209,18 +211,18 @@ export default function NewTenantPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Unit Assignment</CardTitle>
+            <CardTitle>{t('owner.unitAssignment')}</CardTitle>
             <CardDescription>
-              Assign the tenant to a unit (optional - can be done later)
+              {t('owner.assignTenantToUnit')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="property">Property</Label>
+                <Label htmlFor="property">{t('owner.propertyLabel')}</Label>
                 <Select value={selectedProperty} onValueChange={setSelectedProperty}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select property" />
+                    <SelectValue placeholder={t('owner.selectProperty')} />
                   </SelectTrigger>
                   <SelectContent>
                     {properties.map((property) => (
@@ -232,7 +234,7 @@ export default function NewTenantPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="unit">Unit</Label>
+                <Label htmlFor="unit">{t('owner.unitLabel')}</Label>
                 <Select
                   value={formData.unitId || ''}
                   onValueChange={(value) => setFormData({ ...formData, unitId: value || undefined })}
@@ -240,15 +242,15 @@ export default function NewTenantPage() {
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={
-                      !selectedProperty ? "Select property first" :
-                      availableUnits.length === 0 ? "No vacant units" :
-                      "Select unit"
+                      !selectedProperty ? t('owner.selectPropertyFirst') :
+                      availableUnits.length === 0 ? t('owner.noVacantUnits') :
+                      t('owner.selectUnit')
                     } />
                   </SelectTrigger>
                   <SelectContent>
                     {availableUnits.map((unit) => (
                       <SelectItem key={unit.id} value={unit.id}>
-                        Unit {unit.unitNumber} - {formatCurrency(unit.monthlyRent)}/mo
+                        {t('owner.unit')} {unit.unitNumber} - {formatCurrency(unit.monthlyRent)}/mo
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -258,7 +260,7 @@ export default function NewTenantPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="leaseStartDate">Lease Start Date</Label>
+                <Label htmlFor="leaseStartDate">{t('owner.leaseStartDate')}</Label>
                 <Input
                   id="leaseStartDate"
                   type="date"
@@ -267,7 +269,7 @@ export default function NewTenantPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="leaseEndDate">Lease End Date</Label>
+                <Label htmlFor="leaseEndDate">{t('owner.leaseEndDate')}</Label>
                 <Input
                   id="leaseEndDate"
                   type="date"
@@ -281,10 +283,10 @@ export default function NewTenantPage() {
 
         <div className="flex gap-4">
           <Button type="submit" disabled={loading}>
-            {loading ? 'Creating...' : 'Create Tenant'}
+            {loading ? t('owner.creating') : t('owner.createTenant')}
           </Button>
           <Button type="button" variant="outline" asChild>
-            <Link href="/dashboard/tenants">Cancel</Link>
+            <Link href="/dashboard/tenants">{t('common.cancel')}</Link>
           </Button>
         </div>
       </form>

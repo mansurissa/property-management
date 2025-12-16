@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import { clearSession, sessionManager } from '@/lib/session';
 import { useRouter } from 'next/navigation';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 type UserRole = 'super_admin' | 'agency' | 'owner' | 'manager' | 'tenant' | 'maintenance' | 'agent';
 
@@ -38,67 +39,67 @@ interface NavItem {
 }
 
 // Navigation items based on role (Profile removed from desktop - now in top navbar)
-const getNavigationByRole = (role: UserRole | null): NavItem[] => {
+const getNavigationByRole = (role: UserRole | null, t: (key: any) => string): NavItem[] => {
   switch (role) {
     case 'super_admin':
       return [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Demo Requests', href: '/dashboard/admin/demo-requests', icon: Play },
-        { name: 'Users', href: '/dashboard/admin/users', icon: Users },
-        { name: 'Agencies', href: '/dashboard/admin/agencies', icon: UserCog },
-        { name: 'Properties', href: '/dashboard/admin/properties', icon: Building2 },
-        { name: 'Agents', href: '/dashboard/admin/agents', icon: Briefcase },
-        { name: 'Commissions', href: '/dashboard/admin/commissions', icon: DollarSign },
-        { name: 'Reports', href: '/dashboard/admin/reports', icon: ClipboardList },
-        { name: 'Settings', href: '/dashboard/admin/settings', icon: Settings },
+        { name: t('nav.dashboard'), href: '/dashboard', icon: LayoutDashboard },
+        { name: t('nav.demoRequests'), href: '/dashboard/admin/demo-requests', icon: Play },
+        { name: t('nav.users'), href: '/dashboard/admin/users', icon: Users },
+        { name: t('nav.agencies'), href: '/dashboard/admin/agencies', icon: UserCog },
+        { name: t('nav.properties'), href: '/dashboard/admin/properties', icon: Building2 },
+        { name: t('nav.agents'), href: '/dashboard/admin/agents', icon: Briefcase },
+        { name: t('nav.commissions'), href: '/dashboard/admin/commissions', icon: DollarSign },
+        { name: t('nav.reports'), href: '/dashboard/admin/reports', icon: ClipboardList },
+        { name: t('nav.settings'), href: '/dashboard/admin/settings', icon: Settings },
       ];
     case 'agency':
       return [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Properties', href: '/dashboard/properties', icon: Building2 },
-        { name: 'Owners', href: '/dashboard/agency/owners', icon: Users },
-        { name: 'Maintenance', href: '/dashboard/maintenance', icon: Wrench },
-        { name: 'Reports', href: '/dashboard/agency/reports', icon: ClipboardList },
+        { name: t('nav.dashboard'), href: '/dashboard', icon: LayoutDashboard },
+        { name: t('nav.properties'), href: '/dashboard/properties', icon: Building2 },
+        { name: t('nav.owners'), href: '/dashboard/agency/owners', icon: Users },
+        { name: t('nav.maintenance'), href: '/dashboard/maintenance', icon: Wrench },
+        { name: t('nav.reports'), href: '/dashboard/agency/reports', icon: ClipboardList },
       ];
     case 'owner':
       return [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Properties', href: '/dashboard/properties', icon: Building2 },
-        { name: 'Tenants', href: '/dashboard/tenants', icon: Users },
-        { name: 'Payments', href: '/dashboard/payments', icon: CreditCard },
-        { name: 'Maintenance', href: '/dashboard/maintenance', icon: Wrench },
+        { name: t('nav.dashboard'), href: '/dashboard', icon: LayoutDashboard },
+        { name: t('nav.properties'), href: '/dashboard/properties', icon: Building2 },
+        { name: t('nav.tenants'), href: '/dashboard/tenants', icon: Users },
+        { name: t('nav.payments'), href: '/dashboard/payments', icon: CreditCard },
+        { name: t('nav.maintenance'), href: '/dashboard/maintenance', icon: Wrench },
       ];
     case 'tenant':
       return [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'My Unit', href: '/dashboard/tenant/unit', icon: Home },
-        { name: 'Payments', href: '/dashboard/tenant/payments', icon: CreditCard },
-        { name: 'Maintenance', href: '/dashboard/tenant/maintenance', icon: Wrench },
+        { name: t('nav.dashboard'), href: '/dashboard', icon: LayoutDashboard },
+        { name: t('nav.myUnit'), href: '/dashboard/tenant/unit', icon: Home },
+        { name: t('nav.payments'), href: '/dashboard/tenant/payments', icon: CreditCard },
+        { name: t('nav.maintenance'), href: '/dashboard/tenant/maintenance', icon: Wrench },
       ];
     case 'manager':
       return [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Properties', href: '/dashboard/manager/properties', icon: Building2 },
-        { name: 'Tenants', href: '/dashboard/manager/tenants', icon: Users },
-        { name: 'Payments', href: '/dashboard/manager/payments', icon: CreditCard },
-        { name: 'Maintenance', href: '/dashboard/manager/maintenance', icon: Wrench },
+        { name: t('nav.dashboard'), href: '/dashboard', icon: LayoutDashboard },
+        { name: t('nav.properties'), href: '/dashboard/manager/properties', icon: Building2 },
+        { name: t('nav.tenants'), href: '/dashboard/manager/tenants', icon: Users },
+        { name: t('nav.payments'), href: '/dashboard/manager/payments', icon: CreditCard },
+        { name: t('nav.maintenance'), href: '/dashboard/manager/maintenance', icon: Wrench },
       ];
     case 'maintenance':
       return [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'My Tickets', href: '/dashboard/staff/tickets', icon: ClipboardList },
+        { name: t('nav.dashboard'), href: '/dashboard', icon: LayoutDashboard },
+        { name: t('nav.myTickets'), href: '/dashboard/staff/tickets', icon: ClipboardList },
       ];
     case 'agent':
       return [
-        { name: 'Dashboard', href: '/dashboard/agent', icon: LayoutDashboard },
-        { name: 'Assist Owners', href: '/dashboard/agent/assist-owner', icon: Building2 },
-        { name: 'Assist Tenants', href: '/dashboard/agent/assist-tenant', icon: Users },
-        { name: 'Transactions', href: '/dashboard/agent/transactions', icon: Activity },
-        { name: 'Earnings', href: '/dashboard/agent/earnings', icon: DollarSign },
+        { name: t('nav.dashboard'), href: '/dashboard/agent', icon: LayoutDashboard },
+        { name: t('nav.assistOwners'), href: '/dashboard/agent/assist-owner', icon: Building2 },
+        { name: t('nav.assistTenants'), href: '/dashboard/agent/assist-tenant', icon: Users },
+        { name: t('nav.transactions'), href: '/dashboard/agent/transactions', icon: Activity },
+        { name: t('nav.earnings'), href: '/dashboard/agent/earnings', icon: DollarSign },
       ];
     default:
       return [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+        { name: t('nav.dashboard'), href: '/dashboard', icon: LayoutDashboard },
       ];
   }
 };
@@ -146,6 +147,7 @@ const getRoleBadgeClass = (role: UserRole | null): string => {
 };
 
 export default function Sidebar() {
+  const { t } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -161,7 +163,7 @@ export default function Sidebar() {
     }
   }, []);
 
-  const navigation = getNavigationByRole(userRole);
+  const navigation = getNavigationByRole(userRole, t);
 
   const handleLogout = () => {
     clearSession();
@@ -297,7 +299,7 @@ export default function Sidebar() {
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors"
             >
               <Bell className="h-5 w-5" />
-              Notifications
+              {t('nav.notifications')}
             </Link>
             {/* Mobile-only: Profile link */}
             <Link
@@ -306,7 +308,7 @@ export default function Sidebar() {
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors"
             >
               <User className="h-5 w-5" />
-              Profile
+              {t('nav.profile')}
             </Link>
             <Button
               variant="ghost"
@@ -314,7 +316,7 @@ export default function Sidebar() {
               onClick={handleLogout}
             >
               <LogOut className="h-5 w-5" />
-              Logout
+              {t('nav.logout')}
             </Button>
           </div>
         </div>

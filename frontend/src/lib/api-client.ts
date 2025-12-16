@@ -1,5 +1,5 @@
 import { ApiResponse, ApiError, RequestConfig } from '@/types/api';
-import { sessionManager } from '@/lib/session';
+import { sessionManager, clearSession } from '@/lib/session';
 
 class ApiClient {
   private baseURL: string;
@@ -14,8 +14,42 @@ class ApiClient {
     };
   }
 
+  private handleUnauthorized(): void {
+    // Clear session
+    clearSession();
+
+    // Only redirect if we're in the browser
+    if (typeof window !== 'undefined') {
+      // Store current URL to redirect back after login (optional)
+      const currentPath = window.location.pathname;
+      if (currentPath !== '/login' && currentPath !== '/register') {
+        sessionStorage.setItem('redirectAfterLogin', currentPath);
+      }
+
+      // Redirect to login page
+      window.location.href = '/login';
+    }
+  }
+
   private getAuthToken(): string | null {
     if (typeof window === 'undefined') return null;
+
+    // Check if session exists and is expired before calling getToken
+    const sessionKey = localStorage.getItem('renta_session') || sessionStorage.getItem('renta_session');
+    if (sessionKey) {
+      try {
+        const session = JSON.parse(sessionKey);
+        // If session is expired, trigger logout
+        if (session.expiresAt && Date.now() > session.expiresAt) {
+          this.handleUnauthorized();
+          return null;
+        }
+      } catch (e) {
+        // Invalid session format, clear it
+        clearSession();
+      }
+    }
+
     return sessionManager.getToken();
   }
 
@@ -60,6 +94,11 @@ class ApiClient {
       }
 
       if (!response.ok) {
+        // Handle unauthorized/session expired
+        if (response.status === 401) {
+          this.handleUnauthorized();
+        }
+
         const error: ApiError = {
           message: data?.message || data || 'An error occurred',
           status: response.status,
@@ -142,6 +181,11 @@ class ApiClient {
       }
 
       if (!response.ok) {
+        // Handle unauthorized/session expired
+        if (response.status === 401) {
+          this.handleUnauthorized();
+        }
+
         const error: ApiError = {
           message: data?.message || data || 'An error occurred',
           status: response.status,

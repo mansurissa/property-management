@@ -39,8 +39,10 @@ import {
 import { Label } from '@/components/ui/label';
 import { Plus, MoreVertical, Wrench, Trash2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 export default function MaintenancePage() {
+  const { t, locale } = useLanguage();
   const [tickets, setTickets] = useState<MaintenanceTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<MaintenanceFilters>({
@@ -61,7 +63,7 @@ export default function MaintenancePage() {
       const data = await maintenanceApi.getAll(filters);
       setTickets(data);
     } catch (err) {
-      toast.error('Failed to load maintenance tickets');
+      toast.error(t('owner.failedToLoadTickets'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -75,10 +77,10 @@ export default function MaintenancePage() {
     try {
       await maintenanceApi.delete(deleteTicket.id);
       setTickets(tickets.filter(t => t.id !== deleteTicket.id));
-      toast.success('Ticket deleted successfully');
+      toast.success(t('owner.ticketDeletedSuccess'));
       setDeleteTicket(null);
     } catch (err) {
-      toast.error('Failed to delete ticket');
+      toast.error(t('owner.failedToDeleteTicket'));
       console.error(err);
     } finally {
       setProcessing(false);
@@ -92,11 +94,11 @@ export default function MaintenancePage() {
     try {
       const updated = await maintenanceApi.update(updateTicket.id, { status: newStatus as any });
       setTickets(tickets.map(t => t.id === updateTicket.id ? updated : t));
-      toast.success('Status updated successfully');
+      toast.success(t('owner.statusUpdatedSuccess'));
       setUpdateTicket(null);
       setNewStatus('');
     } catch (err) {
-      toast.error('Failed to update status');
+      toast.error(t('owner.failedToUpdateStatus'));
       console.error(err);
     } finally {
       setProcessing(false);
@@ -104,7 +106,7 @@ export default function MaintenancePage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-RW', {
+    return new Date(dateString).toLocaleDateString(`${locale}-RW`, {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
@@ -114,13 +116,13 @@ export default function MaintenancePage() {
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
       case 'urgent':
-        return <Badge className="bg-red-100 text-red-800">Urgent</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('tenant.urgent')}</Badge>;
       case 'high':
-        return <Badge className="bg-orange-100 text-orange-800">High</Badge>;
+        return <Badge className="bg-orange-100 text-orange-800">{t('tenant.high')}</Badge>;
       case 'medium':
-        return <Badge className="bg-yellow-100 text-yellow-800">Medium</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800">{t('tenant.medium')}</Badge>;
       case 'low':
-        return <Badge className="bg-green-100 text-green-800">Low</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('tenant.low')}</Badge>;
       default:
         return <Badge variant="secondary">{priority}</Badge>;
     }
@@ -129,13 +131,13 @@ export default function MaintenancePage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="outline">Pending</Badge>;
+        return <Badge variant="outline">{t('common.pending')}</Badge>;
       case 'in_progress':
-        return <Badge className="bg-blue-100 text-blue-800">In Progress</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t('tenant.inProgress')}</Badge>;
       case 'completed':
-        return <Badge className="bg-green-100 text-green-800">Completed</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('common.completed')}</Badge>;
       case 'cancelled':
-        return <Badge className="bg-gray-100 text-gray-800">Cancelled</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t('tenant.cancelled')}</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -143,11 +145,11 @@ export default function MaintenancePage() {
 
   const getCategoryLabel = (category: string) => {
     const labels: Record<string, string> = {
-      plumbing: 'Plumbing',
-      electrical: 'Electrical',
-      structural: 'Structural',
-      appliance: 'Appliance',
-      other: 'Other'
+      plumbing: t('owner.plumbing'),
+      electrical: t('owner.electrical'),
+      structural: t('owner.structural'),
+      appliance: t('owner.appliance'),
+      other: t('owner.other')
     };
     return labels[category] || category;
   };
@@ -171,22 +173,22 @@ export default function MaintenancePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Maintenance</h1>
+          <h1 className="text-3xl font-bold">{t('owner.maintenance')}</h1>
           <p className="text-muted-foreground">
-            Manage maintenance tickets
+            {t('owner.manageMaintenanceTickets')}
           </p>
         </div>
         <Button asChild>
           <Link href="/dashboard/maintenance/new">
             <Plus className="mr-2 h-4 w-4" />
-            New Ticket
+            {t('owner.newTicket')}
           </Link>
         </Button>
       </div>
 
       <div className="flex flex-wrap items-end gap-4">
         <div className="space-y-2">
-          <Label>Status</Label>
+          <Label>{t('common.status')}</Label>
           <Select
             value={filters.status || 'all'}
             onValueChange={(value) => setFilters({
@@ -195,20 +197,20 @@ export default function MaintenancePage() {
             })}
           >
             <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="All statuses" />
+              <SelectValue placeholder={t('owner.allStatuses')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="in_progress">In Progress</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="all">{t('owner.allStatuses')}</SelectItem>
+              <SelectItem value="pending">{t('common.pending')}</SelectItem>
+              <SelectItem value="in_progress">{t('tenant.inProgress')}</SelectItem>
+              <SelectItem value="completed">{t('common.completed')}</SelectItem>
+              <SelectItem value="cancelled">{t('tenant.cancelled')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
-          <Label>Priority</Label>
+          <Label>{t('tenant.requestPriority')}</Label>
           <Select
             value={filters.priority || 'all'}
             onValueChange={(value) => setFilters({
@@ -217,14 +219,14 @@ export default function MaintenancePage() {
             })}
           >
             <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="All priorities" />
+              <SelectValue placeholder={t('owner.allPriorities')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All priorities</SelectItem>
-              <SelectItem value="urgent">Urgent</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="all">{t('owner.allPriorities')}</SelectItem>
+              <SelectItem value="urgent">{t('tenant.urgent')}</SelectItem>
+              <SelectItem value="high">{t('tenant.high')}</SelectItem>
+              <SelectItem value="medium">{t('tenant.medium')}</SelectItem>
+              <SelectItem value="low">{t('tenant.low')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -234,16 +236,16 @@ export default function MaintenancePage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Wrench className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No tickets found</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('owner.noTicketsFound')}</h3>
             <p className="text-muted-foreground text-center mb-4">
               {filters.status || filters.priority
-                ? 'No tickets match the selected filters'
-                : 'No maintenance tickets yet'}
+                ? t('owner.noTicketsMatchFilters')
+                : t('owner.noMaintenanceTickets')}
             </p>
             <Button asChild>
               <Link href="/dashboard/maintenance/new">
                 <Plus className="mr-2 h-4 w-4" />
-                Create Ticket
+                {t('owner.createTicket')}
               </Link>
             </Button>
           </CardContent>
@@ -253,12 +255,12 @@ export default function MaintenancePage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Property / Unit</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t('common.date')}</TableHead>
+                <TableHead>{t('owner.propertyUnit')}</TableHead>
+                <TableHead>{t('owner.category')}</TableHead>
+                <TableHead>{t('common.description')}</TableHead>
+                <TableHead>{t('tenant.requestPriority')}</TableHead>
+                <TableHead>{t('common.status')}</TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
@@ -271,7 +273,7 @@ export default function MaintenancePage() {
                       <div>
                         <p className="font-medium">{ticket.unit.property?.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          Unit {ticket.unit.unitNumber}
+                          {t('owner.unit')} {ticket.unit.unitNumber}
                         </p>
                       </div>
                     ) : (
@@ -297,14 +299,14 @@ export default function MaintenancePage() {
                           setNewStatus(ticket.status);
                         }}>
                           <CheckCircle className="mr-2 h-4 w-4" />
-                          Update Status
+                          {t('owner.updateStatus')}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-destructive"
                           onClick={() => setDeleteTicket(ticket)}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                          {t('common.delete')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -320,33 +322,33 @@ export default function MaintenancePage() {
       <Dialog open={!!updateTicket} onOpenChange={() => setUpdateTicket(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Update Status</DialogTitle>
+            <DialogTitle>{t('owner.updateStatus')}</DialogTitle>
             <DialogDescription>
-              Change the status of this maintenance ticket
+              {t('owner.changeTicketStatus')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>New Status</Label>
+              <Label>{t('owner.newStatus')}</Label>
               <Select value={newStatus} onValueChange={setNewStatus}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder={t('owner.selectStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="pending">{t('common.pending')}</SelectItem>
+                  <SelectItem value="in_progress">{t('tenant.inProgress')}</SelectItem>
+                  <SelectItem value="completed">{t('common.completed')}</SelectItem>
+                  <SelectItem value="cancelled">{t('tenant.cancelled')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setUpdateTicket(null)} disabled={processing}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleUpdateStatus} disabled={processing}>
-              {processing ? 'Updating...' : 'Update'}
+              {processing ? t('owner.updating') : t('owner.update')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -356,17 +358,17 @@ export default function MaintenancePage() {
       <Dialog open={!!deleteTicket} onOpenChange={() => setDeleteTicket(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Ticket</DialogTitle>
+            <DialogTitle>{t('owner.deleteTicket')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this maintenance ticket? This action cannot be undone.
+              {t('owner.deleteTicketConfirm')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteTicket(null)} disabled={processing}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={processing}>
-              {processing ? 'Deleting...' : 'Delete'}
+              {processing ? t('owner.deleting') : t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

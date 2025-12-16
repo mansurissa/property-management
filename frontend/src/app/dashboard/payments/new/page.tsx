@@ -19,14 +19,10 @@ import {
 } from '@/components/ui/select';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-
-const paymentMethods = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'momo', label: 'Mobile Money (MoMo)' },
-  { value: 'bank', label: 'Bank Transfer' },
-];
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 export default function NewPaymentPage() {
+  const { t, locale } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedTenantId = searchParams.get('tenantId');
@@ -44,6 +40,12 @@ export default function NewPaymentPage() {
     periodYear: new Date().getFullYear(),
     notes: '',
   });
+
+  const paymentMethods = [
+    { value: 'cash', label: t('owner.cash') },
+    { value: 'momo', label: t('owner.momo') },
+    { value: 'bank', label: t('owner.bank') },
+  ];
 
   useEffect(() => {
     loadTenants();
@@ -63,7 +65,7 @@ export default function NewPaymentPage() {
       const data = await tenantsApi.getAll('active');
       setTenants(data.filter(t => t.unitId));
     } catch (err) {
-      toast.error('Failed to load tenants');
+      toast.error(t('owner.failedToLoadTenants'));
       console.error(err);
     }
   };
@@ -85,17 +87,17 @@ export default function NewPaymentPage() {
     e.preventDefault();
 
     if (!formData.tenantId || !formData.unitId || !formData.amount || !formData.paymentDate) {
-      toast.error('Please fill in all required fields');
+      toast.error(t('owner.fillRequired'));
       return;
     }
 
     setLoading(true);
     try {
       await paymentsApi.create(formData);
-      toast.success('Payment recorded successfully');
+      toast.success(t('owner.paymentRecordedSuccess'));
       router.push('/dashboard/payments');
     } catch (err) {
-      toast.error('Failed to record payment');
+      toast.error(t('owner.failedToRecordPayment'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -103,7 +105,7 @@ export default function NewPaymentPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-RW', {
+    return new Intl.NumberFormat(`${locale}-RW`, {
       style: 'currency',
       currency: 'RWF',
       minimumFractionDigits: 0
@@ -111,7 +113,7 @@ export default function NewPaymentPage() {
   };
 
   const getMonthName = (month: number) => {
-    return new Date(2000, month - 1, 1).toLocaleDateString('en-US', { month: 'long' });
+    return new Date(2000, month - 1, 1).toLocaleDateString(`${locale}-RW`, { month: 'long' });
   };
 
   const currentYear = new Date().getFullYear();
@@ -130,9 +132,9 @@ export default function NewPaymentPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">Record Payment</h1>
+          <h1 className="text-3xl font-bold">{t('owner.recordPayment')}</h1>
           <p className="text-muted-foreground">
-            Record a rent payment from a tenant
+            {t('owner.recordNewPayment')}
           </p>
         </div>
       </div>
@@ -140,25 +142,25 @@ export default function NewPaymentPage() {
       <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
         <Card>
           <CardHeader>
-            <CardTitle>Tenant Selection</CardTitle>
+            <CardTitle>{t('owner.tenantSelection')}</CardTitle>
             <CardDescription>
-              Select the tenant making the payment
+              {t('owner.selectTenantMakingPayment')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="tenant">Tenant *</Label>
+              <Label htmlFor="tenant">{t('owner.tenantLabel')}</Label>
               <Select
                 value={formData.tenantId}
                 onValueChange={handleTenantChange}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select tenant" />
+                  <SelectValue placeholder={t('owner.selectTenant')} />
                 </SelectTrigger>
                 <SelectContent>
                   {tenants.map((tenant) => (
                     <SelectItem key={tenant.id} value={tenant.id}>
-                      {tenant.firstName} {tenant.lastName} - {tenant.unit?.property?.name} (Unit {tenant.unit?.unitNumber})
+                      {tenant.firstName} {tenant.lastName} - {tenant.unit?.property?.name} ({t('owner.unit')} {tenant.unit?.unitNumber})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -167,12 +169,12 @@ export default function NewPaymentPage() {
 
             {selectedTenant && selectedTenant.unit && (
               <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">Selected unit</p>
+                <p className="text-sm text-muted-foreground">{t('owner.selectedUnit')}</p>
                 <p className="font-medium">
-                  {selectedTenant.unit.property?.name} - Unit {selectedTenant.unit.unitNumber}
+                  {selectedTenant.unit.property?.name} - {t('owner.unit')} {selectedTenant.unit.unitNumber}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Monthly rent: {formatCurrency(selectedTenant.unit.monthlyRent)}
+                  {t('owner.monthlyRentLabel')}: {formatCurrency(selectedTenant.unit.monthlyRent)}
                 </p>
               </div>
             )}
@@ -181,32 +183,32 @@ export default function NewPaymentPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Payment Details</CardTitle>
+            <CardTitle>{t('owner.paymentDetails')}</CardTitle>
             <CardDescription>
-              Enter the payment information
+              {t('owner.enterPaymentInfo')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="amount">Amount (RWF) *</Label>
+                <Label htmlFor="amount">{t('owner.amountLabel')}</Label>
                 <Input
                   id="amount"
                   type="number"
-                  placeholder="e.g., 150000"
+                  placeholder={t('owner.amountPlaceholder')}
                   value={formData.amount || ''}
                   onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="paymentMethod">Payment Method</Label>
+                <Label htmlFor="paymentMethod">{t('owner.paymentMethodLabel')}</Label>
                 <Select
                   value={formData.paymentMethod}
                   onValueChange={(value: 'cash' | 'momo' | 'bank') => setFormData({ ...formData, paymentMethod: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select method" />
+                    <SelectValue placeholder={t('owner.selectMethod')} />
                   </SelectTrigger>
                   <SelectContent>
                     {paymentMethods.map((method) => (
@@ -220,7 +222,7 @@ export default function NewPaymentPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="paymentDate">Payment Date *</Label>
+              <Label htmlFor="paymentDate">{t('owner.paymentDateLabel')}</Label>
               <Input
                 id="paymentDate"
                 type="date"
@@ -232,13 +234,13 @@ export default function NewPaymentPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="periodMonth">For Month *</Label>
+                <Label htmlFor="periodMonth">{t('owner.forMonth')}</Label>
                 <Select
                   value={formData.periodMonth.toString()}
                   onValueChange={(value) => setFormData({ ...formData, periodMonth: parseInt(value) })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select month" />
+                    <SelectValue placeholder={t('owner.selectMonth')} />
                   </SelectTrigger>
                   <SelectContent>
                     {months.map((month) => (
@@ -250,13 +252,13 @@ export default function NewPaymentPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="periodYear">For Year *</Label>
+                <Label htmlFor="periodYear">{t('owner.forYear')}</Label>
                 <Select
                   value={formData.periodYear.toString()}
                   onValueChange={(value) => setFormData({ ...formData, periodYear: parseInt(value) })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select year" />
+                    <SelectValue placeholder={t('owner.selectYear')} />
                   </SelectTrigger>
                   <SelectContent>
                     {years.map((year) => (
@@ -270,10 +272,10 @@ export default function NewPaymentPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{t('owner.notesLabel')}</Label>
               <Textarea
                 id="notes"
-                placeholder="Optional notes about this payment..."
+                placeholder={t('owner.notesPlaceholder')}
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 rows={3}
@@ -284,10 +286,10 @@ export default function NewPaymentPage() {
 
         <div className="flex gap-4">
           <Button type="submit" disabled={loading}>
-            {loading ? 'Recording...' : 'Record Payment'}
+            {loading ? t('owner.recording') : t('owner.recordPaymentBtn')}
           </Button>
           <Button type="button" variant="outline" asChild>
-            <Link href="/dashboard/payments">Cancel</Link>
+            <Link href="/dashboard/payments">{t('common.cancel')}</Link>
           </Button>
         </div>
       </form>

@@ -34,30 +34,30 @@ import {
 
 type UserRole = 'super_admin' | 'agency' | 'owner' | 'manager' | 'tenant' | 'maintenance' | 'agent';
 
-// Role-specific welcome messages
-const getWelcomeMessage = (role: UserRole | null): string => {
-  switch (role) {
-    case 'super_admin':
-      return "Welcome to the admin panel. Here's a platform-wide overview.";
-    case 'agency':
-      return "Welcome back! Here's an overview of properties you manage.";
-    case 'owner':
-      return "Welcome back! Here's an overview of your properties.";
-    case 'manager':
-      return "Welcome back! Here's an overview of properties you manage.";
-    case 'tenant':
-      return "Welcome to your tenant portal. View your unit and payments.";
-    case 'maintenance':
-      return "Welcome! Here are your assigned maintenance tickets.";
-    case 'agent':
-      return "Welcome! Access your agent dashboard to assist owners and tenants.";
-    default:
-      return "Welcome back!";
-  }
-};
-
 export default function DashboardPage() {
   const { t, locale } = useLanguage();
+
+  // Role-specific welcome messages using translations
+  const getWelcomeMessage = (role: UserRole | null): string => {
+    switch (role) {
+      case 'super_admin':
+        return t('dashboard.superAdminWelcome');
+      case 'agency':
+        return t('dashboard.agencyWelcome');
+      case 'owner':
+        return t('dashboard.ownerWelcome');
+      case 'manager':
+        return t('dashboard.managerWelcome');
+      case 'tenant':
+        return t('dashboard.tenantWelcome');
+      case 'maintenance':
+        return t('dashboard.maintenanceWelcome');
+      case 'agent':
+        return t('dashboard.agentWelcome');
+      default:
+        return t('dashboard.welcomeBack');
+    }
+  };
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [tenantData, setTenantData] = useState<TenantDashboardData | null>(null);
   const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
@@ -87,7 +87,7 @@ export default function DashboardPage() {
       const data = await dashboardApi.getStats();
       setStats(data);
     } catch (err) {
-      setError('Failed to load dashboard statistics');
+      setError(t('dashboard.failedToLoad'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -99,7 +99,7 @@ export default function DashboardPage() {
       const data = await tenantPortalApi.getDashboard();
       setTenantData(data);
     } catch (err) {
-      setError('Failed to load dashboard data');
+      setError(t('dashboard.failedToLoadData'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -111,7 +111,7 @@ export default function DashboardPage() {
       // Check if we have a token before making the request
       const token = sessionManager.getToken();
       if (!token) {
-        setError('Session expired. Please log in again.');
+        setError(t('dashboard.sessionExpired'));
         setLoading(false);
         return;
       }
@@ -132,11 +132,11 @@ export default function DashboardPage() {
       console.error('Failed to load admin statistics:', err);
       // Show more specific error messages
       if (err?.status === 401) {
-        setError('Session expired. Please log in again.');
+        setError(t('dashboard.sessionExpired'));
       } else if (err?.status === 403) {
-        setError('Access denied. Admin privileges required.');
+        setError(t('dashboard.accessDenied'));
       } else {
-        setError(err?.message || 'Failed to load admin statistics');
+        setError(err?.message || t('dashboard.failedToLoadAdmin'));
       }
     } finally {
       setLoading(false);
@@ -207,7 +207,7 @@ export default function DashboardPage() {
           else if (userRole === 'tenant') loadTenantDashboard();
           else setLoading(false);
         }}>
-          Try Again
+          {t('dashboard.tryAgain')}
         </Button>
       </div>
     );
@@ -231,7 +231,7 @@ export default function DashboardPage() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Total Users</p>
+                      <p className="text-sm text-muted-foreground">{t('dashboard.totalUsers')}</p>
                       <p className="text-3xl font-bold">{adminStats?.overview.totalUsers || 0}</p>
                     </div>
                     <Users className="h-8 w-8 text-blue-500" />
@@ -243,7 +243,7 @@ export default function DashboardPage() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Properties</p>
+                      <p className="text-sm text-muted-foreground">{t('dashboard.totalProperties')}</p>
                       <p className="text-3xl font-bold">{adminStats?.overview.totalProperties || 0}</p>
                     </div>
                     <Building2 className="h-8 w-8 text-green-500" />
@@ -255,7 +255,7 @@ export default function DashboardPage() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Total Units</p>
+                      <p className="text-sm text-muted-foreground">{t('dashboard.totalUnits')}</p>
                       <p className="text-3xl font-bold">{adminStats?.overview.totalUnits || 0}</p>
                     </div>
                     <Home className="h-8 w-8 text-purple-500" />
@@ -267,7 +267,7 @@ export default function DashboardPage() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Total Tenants</p>
+                      <p className="text-sm text-muted-foreground">{t('dashboard.totalTenants')}</p>
                       <p className="text-3xl font-bold">{adminStats?.overview.totalTenants || 0}</p>
                     </div>
                     <Users className="h-8 w-8 text-orange-500" />
@@ -282,7 +282,7 @@ export default function DashboardPage() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-green-700">Monthly Revenue</p>
+                      <p className="text-sm text-green-700">{t('dashboard.monthlyRevenue')}</p>
                       <p className="text-2xl font-bold text-green-800">{formatCurrency(adminStats?.overview.totalRevenue || 0)}</p>
                     </div>
                     <DollarSign className="h-8 w-8 text-green-600" />
@@ -294,13 +294,13 @@ export default function DashboardPage() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-blue-700">Occupancy Rate</p>
+                      <p className="text-sm text-blue-700">{t('dashboard.occupancyRate')}</p>
                       <p className="text-2xl font-bold text-blue-800">{adminStats?.overview.occupancyRate || 0}%</p>
                     </div>
                     <TrendingUp className="h-8 w-8 text-blue-600" />
                   </div>
                   <p className="text-xs text-blue-600 mt-2">
-                    {adminStats?.overview.occupiedUnits || 0} occupied / {adminStats?.overview.vacantUnits || 0} vacant
+                    {adminStats?.overview.occupiedUnits || 0} {t('dashboard.occupied')} / {adminStats?.overview.vacantUnits || 0} {t('dashboard.vacant')}
                   </p>
                 </CardContent>
               </Card>
@@ -309,7 +309,7 @@ export default function DashboardPage() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-amber-700">Pending Maintenance</p>
+                      <p className="text-sm text-amber-700">{t('dashboard.pendingMaintenance')}</p>
                       <p className="text-2xl font-bold text-amber-800">{adminStats?.overview.pendingMaintenance || 0}</p>
                     </div>
                     <Wrench className="h-8 w-8 text-amber-600" />
@@ -322,13 +322,13 @@ export default function DashboardPage() {
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-purple-700">Pending Demos</p>
+                        <p className="text-sm text-purple-700">{t('dashboard.pendingDemos')}</p>
                         <p className="text-2xl font-bold text-purple-800">{demoStats.pending}</p>
                       </div>
                       <Play className="h-8 w-8 text-purple-600" />
                     </div>
                     <p className="text-xs text-purple-600 mt-2">
-                      {demoStats.recentCount} in last 7 days
+                      {demoStats.recentCount} {t('dashboard.inLast7Days')}
                     </p>
                   </CardContent>
                 </Card>
@@ -342,10 +342,10 @@ export default function DashboardPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Users className="h-5 w-5" />
-                    Users by Role
+                    {t('dashboard.usersByRole')}
                   </CardTitle>
                   <CardDescription>
-                    Distribution of users across different roles
+                    {t('dashboard.usersByRoleDesc')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -385,16 +385,16 @@ export default function DashboardPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <UserPlus className="h-5 w-5" />
-                    Recent Users
+                    {t('dashboard.recentUsers')}
                   </CardTitle>
                   <CardDescription>
-                    Latest users registered on the platform
+                    {t('dashboard.recentUsersDesc')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {!adminStats?.recentUsers || adminStats.recentUsers.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-8">
-                      No users found
+                      {t('dashboard.noUsers')}
                     </p>
                   ) : (
                     <div className="space-y-3">
@@ -440,27 +440,27 @@ export default function DashboardPage() {
             {/* Quick Actions */}
             <Card>
               <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-                <CardDescription>Common administrative tasks</CardDescription>
+                <CardTitle>{t('dashboard.quickActions')}</CardTitle>
+                <CardDescription>{t('dashboard.quickActions')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <Link href="/dashboard/admin/users">
                     <Button variant="outline" className="w-full h-20 flex flex-col gap-2">
                       <Users className="h-5 w-5" />
-                      <span className="text-xs">Manage Users</span>
+                      <span className="text-xs">{t('dashboard.manageUsers')}</span>
                     </Button>
                   </Link>
                   <Link href="/dashboard/admin/agencies">
                     <Button variant="outline" className="w-full h-20 flex flex-col gap-2">
                       <Building2 className="h-5 w-5" />
-                      <span className="text-xs">View Agencies</span>
+                      <span className="text-xs">{t('dashboard.viewAgencies')}</span>
                     </Button>
                   </Link>
                   <Link href="/dashboard/admin/demo-requests">
                     <Button variant="outline" className="w-full h-20 flex flex-col gap-2 relative">
                       <Play className="h-5 w-5" />
-                      <span className="text-xs">Demo Requests</span>
+                      <span className="text-xs">{t('dashboard.demoRequests')}</span>
                       {demoStats && demoStats.pending > 0 && (
                         <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center">
                           {demoStats.pending}
@@ -471,7 +471,7 @@ export default function DashboardPage() {
                   <Link href="/dashboard/admin/agents/applications">
                     <Button variant="outline" className="w-full h-20 flex flex-col gap-2">
                       <Clock className="h-5 w-5" />
-                      <span className="text-xs">Agent Applications</span>
+                      <span className="text-xs">{t('dashboard.agentApplications')}</span>
                     </Button>
                   </Link>
                 </div>
@@ -726,7 +726,7 @@ export default function DashboardPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <h1 className="text-3xl font-bold">{t('dashboard.dashboard')}</h1>
           <p className="text-muted-foreground">
             {getWelcomeMessage(userRole)}
           </p>
@@ -739,7 +739,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <h1 className="text-3xl font-bold">{t('dashboard.dashboard')}</h1>
         <p className="text-muted-foreground">
           {getWelcomeMessage(userRole)}
         </p>
@@ -748,23 +748,23 @@ export default function DashboardPage() {
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
-          title="Total Properties"
+          title={t('dashboard.totalProperties')}
           value={stats?.overview.totalProperties || 0}
           icon={Building2}
         />
         <StatsCard
-          title="Total Units"
+          title={t('dashboard.totalUnits')}
           value={stats?.overview.totalUnits || 0}
-          description={`${stats?.overview.occupiedUnits || 0} occupied, ${stats?.overview.vacantUnits || 0} vacant`}
+          description={`${stats?.overview.occupiedUnits || 0} ${t('dashboard.occupied')}, ${stats?.overview.vacantUnits || 0} ${t('dashboard.vacant')}`}
           icon={Home}
         />
         <StatsCard
-          title="Occupancy Rate"
+          title={t('dashboard.occupancyRate')}
           value={`${stats?.overview.occupancyRate || 0}%`}
           icon={TrendingUp}
         />
         <StatsCard
-          title="Active Tenants"
+          title={t('dashboard.activeTenants')}
           value={stats?.overview.activeTenants || 0}
           description={stats?.overview.lateTenants ? `${stats.overview.lateTenants} late` : undefined}
           icon={Users}
@@ -773,13 +773,13 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
-          title="Monthly Revenue"
+          title={t('dashboard.monthlyRevenue')}
           value={formatCurrency(stats?.overview.totalRevenue || 0)}
           description={`${stats?.currentPeriod.month}/${stats?.currentPeriod.year}`}
           icon={CreditCard}
         />
         <StatsCard
-          title="Pending Maintenance"
+          title={t('dashboard.pendingMaintenance')}
           value={stats?.overview.pendingMaintenance || 0}
           icon={Wrench}
         />
@@ -790,8 +790,8 @@ export default function DashboardPage() {
         {/* Recent Payments */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Payments</CardTitle>
-            <CardDescription>Latest payment transactions</CardDescription>
+            <CardTitle>{t('dashboard.recentPayments')}</CardTitle>
+            <CardDescription>{t('dashboard.recentPayments')}</CardDescription>
           </CardHeader>
           <CardContent>
             {stats?.recentPayments && stats.recentPayments.length > 0 ? (
@@ -831,8 +831,8 @@ export default function DashboardPage() {
         {/* Recent Maintenance */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Maintenance</CardTitle>
-            <CardDescription>Latest maintenance tickets</CardDescription>
+            <CardTitle>{t('dashboard.recentMaintenance')}</CardTitle>
+            <CardDescription>{t('dashboard.recentMaintenanceRequests')}</CardDescription>
           </CardHeader>
           <CardContent>
             {stats?.recentMaintenance && stats.recentMaintenance.length > 0 ? (

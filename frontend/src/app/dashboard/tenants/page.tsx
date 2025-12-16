@@ -38,8 +38,10 @@ import {
 } from '@/components/ui/select';
 import { Plus, MoreVertical, Users, Pencil, Trash2, Phone, Mail, Home } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 export default function TenantsPage() {
+  const { t, locale } = useLanguage();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -56,7 +58,7 @@ export default function TenantsPage() {
       const data = await tenantsApi.getAll(filter);
       setTenants(data);
     } catch (err) {
-      toast.error('Failed to load tenants');
+      toast.error(t('owner.failedToLoadTenants'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -70,10 +72,10 @@ export default function TenantsPage() {
     try {
       await tenantsApi.delete(deleteTenant.id);
       setTenants(tenants.filter(t => t.id !== deleteTenant.id));
-      toast.success('Tenant deleted successfully');
+      toast.success(t('owner.tenantDeletedSuccess'));
       setDeleteTenant(null);
     } catch (err) {
-      toast.error('Failed to delete tenant');
+      toast.error(t('owner.failedToDeleteTenant'));
       console.error(err);
     } finally {
       setDeleting(false);
@@ -83,18 +85,18 @@ export default function TenantsPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('common.active')}</Badge>;
       case 'late':
-        return <Badge className="bg-red-100 text-red-800">Late</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('owner.late')}</Badge>;
       case 'exited':
-        return <Badge className="bg-gray-100 text-gray-800">Exited</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t('owner.exited')}</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-RW', {
+    return new Intl.NumberFormat(`${locale}-RW`, {
       style: 'currency',
       currency: 'RWF',
       minimumFractionDigits: 0
@@ -120,15 +122,15 @@ export default function TenantsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Tenants</h1>
+          <h1 className="text-3xl font-bold">{t('owner.tenants')}</h1>
           <p className="text-muted-foreground">
-            Manage your tenants
+            {t('owner.manageTenants')}
           </p>
         </div>
         <Button asChild>
           <Link href="/dashboard/tenants/new">
             <Plus className="mr-2 h-4 w-4" />
-            Add Tenant
+            {t('owner.addTenant')}
           </Link>
         </Button>
       </div>
@@ -136,13 +138,13 @@ export default function TenantsPage() {
       <div className="flex items-center gap-4">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by status" />
+            <SelectValue placeholder={t('owner.filterByStatus')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Tenants</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="late">Late</SelectItem>
-            <SelectItem value="exited">Exited</SelectItem>
+            <SelectItem value="all">{t('owner.allTenants')}</SelectItem>
+            <SelectItem value="active">{t('common.active')}</SelectItem>
+            <SelectItem value="late">{t('owner.late')}</SelectItem>
+            <SelectItem value="exited">{t('owner.exited')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -151,14 +153,14 @@ export default function TenantsPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Users className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No tenants yet</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('owner.noTenantsYet')}</h3>
             <p className="text-muted-foreground text-center mb-4">
-              Get started by adding your first tenant
+              {t('owner.getStartedAddTenant')}
             </p>
             <Button asChild>
               <Link href="/dashboard/tenants/new">
                 <Plus className="mr-2 h-4 w-4" />
-                Add Tenant
+                {t('owner.addTenant')}
               </Link>
             </Button>
           </CardContent>
@@ -168,11 +170,11 @@ export default function TenantsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Property / Unit</TableHead>
-                <TableHead>Rent</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t('owner.name')}</TableHead>
+                <TableHead>{t('owner.contact')}</TableHead>
+                <TableHead>{t('owner.propertyUnit')}</TableHead>
+                <TableHead>{t('owner.rent')}</TableHead>
+                <TableHead>{t('common.status')}</TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
@@ -207,11 +209,11 @@ export default function TenantsPage() {
                         <p className="font-medium">{tenant.unit.property?.name}</p>
                         <p className="text-sm text-muted-foreground flex items-center gap-1">
                           <Home className="h-3 w-3" />
-                          Unit {tenant.unit.unitNumber}
+                          {t('owner.unit')} {tenant.unit.unitNumber}
                         </p>
                       </div>
                     ) : (
-                      <span className="text-muted-foreground">Not assigned</span>
+                      <span className="text-muted-foreground">{t('owner.notAssigned')}</span>
                     )}
                   </TableCell>
                   <TableCell>
@@ -228,13 +230,13 @@ export default function TenantsPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
                           <Link href={`/dashboard/tenants/${tenant.id}`}>
-                            View Details
+                            {t('owner.viewDetails')}
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                           <Link href={`/dashboard/tenants/${tenant.id}/edit`}>
                             <Pencil className="mr-2 h-4 w-4" />
-                            Edit
+                            {t('common.edit')}
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem
@@ -242,7 +244,7 @@ export default function TenantsPage() {
                           onClick={() => setDeleteTenant(tenant)}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                          {t('common.delete')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -258,9 +260,9 @@ export default function TenantsPage() {
       <Dialog open={!!deleteTenant} onOpenChange={() => setDeleteTenant(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Tenant</DialogTitle>
+            <DialogTitle>{t('owner.deleteTenant')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete {deleteTenant?.firstName} {deleteTenant?.lastName}? This action cannot be undone.
+              {t('owner.deleteTenantConfirm')} {deleteTenant?.firstName} {deleteTenant?.lastName}? {t('owner.deleteTenantWarning')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -269,14 +271,14 @@ export default function TenantsPage() {
               onClick={() => setDeleteTenant(null)}
               disabled={deleting}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={handleDelete}
               disabled={deleting}
             >
-              {deleting ? 'Deleting...' : 'Delete'}
+              {deleting ? t('owner.deleting') : t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

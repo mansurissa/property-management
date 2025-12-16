@@ -26,8 +26,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Plus, CreditCard, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 export default function PaymentsPage() {
+  const { t, locale } = useLanguage();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<PaymentFilters>({
@@ -44,7 +46,7 @@ export default function PaymentsPage() {
       const data = await paymentsApi.getAll(filters);
       setPayments(data);
     } catch (err) {
-      toast.error('Failed to load payments');
+      toast.error(t('owner.failedToLoadPayments'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -52,7 +54,7 @@ export default function PaymentsPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-RW', {
+    return new Intl.NumberFormat(`${locale}-RW`, {
       style: 'currency',
       currency: 'RWF',
       minimumFractionDigits: 0
@@ -60,7 +62,7 @@ export default function PaymentsPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-RW', {
+    return new Date(dateString).toLocaleDateString(`${locale}-RW`, {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
@@ -68,17 +70,17 @@ export default function PaymentsPage() {
   };
 
   const getMonthName = (month: number) => {
-    return new Date(2000, month - 1, 1).toLocaleDateString('en-US', { month: 'long' });
+    return new Date(2000, month - 1, 1).toLocaleDateString(`${locale}-RW`, { month: 'long' });
   };
 
   const getPaymentMethodBadge = (method: string) => {
     switch (method) {
       case 'cash':
-        return <Badge variant="secondary">Cash</Badge>;
+        return <Badge variant="secondary">{t('owner.cash')}</Badge>;
       case 'momo':
-        return <Badge className="bg-yellow-100 text-yellow-800">MoMo</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800">{t('owner.momo')}</Badge>;
       case 'bank':
-        return <Badge className="bg-blue-100 text-blue-800">Bank</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t('owner.bank')}</Badge>;
       default:
         return <Badge variant="secondary">{method}</Badge>;
     }
@@ -112,22 +114,22 @@ export default function PaymentsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Payments</h1>
+          <h1 className="text-3xl font-bold">{t('owner.payments')}</h1>
           <p className="text-muted-foreground">
-            View and record rent payments
+            {t('owner.viewRecordPayments')}
           </p>
         </div>
         <Button asChild>
           <Link href="/dashboard/payments/new">
             <Plus className="mr-2 h-4 w-4" />
-            Record Payment
+            {t('owner.recordPayment')}
           </Link>
         </Button>
       </div>
 
       <div className="flex flex-wrap items-end gap-4">
         <div className="space-y-2">
-          <Label>Month</Label>
+          <Label>{t('owner.month')}</Label>
           <Select
             value={filters.periodMonth?.toString() || 'all'}
             onValueChange={(value) => setFilters({
@@ -136,10 +138,10 @@ export default function PaymentsPage() {
             })}
           >
             <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="All months" />
+              <SelectValue placeholder={t('owner.allMonths')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All months</SelectItem>
+              <SelectItem value="all">{t('owner.allMonths')}</SelectItem>
               {months.map((month) => (
                 <SelectItem key={month.value} value={month.value.toString()}>
                   {month.label}
@@ -150,7 +152,7 @@ export default function PaymentsPage() {
         </div>
 
         <div className="space-y-2">
-          <Label>Year</Label>
+          <Label>{t('owner.year')}</Label>
           <Select
             value={filters.periodYear?.toString() || currentYear.toString()}
             onValueChange={(value) => setFilters({
@@ -159,7 +161,7 @@ export default function PaymentsPage() {
             })}
           >
             <SelectTrigger className="w-[120px]">
-              <SelectValue placeholder="Year" />
+              <SelectValue placeholder={t('owner.year')} />
             </SelectTrigger>
             <SelectContent>
               {years.map((year) => (
@@ -173,7 +175,7 @@ export default function PaymentsPage() {
 
         {payments.length > 0 && (
           <div className="ml-auto text-right">
-            <p className="text-sm text-muted-foreground">Total collected</p>
+            <p className="text-sm text-muted-foreground">{t('owner.totalCollected')}</p>
             <p className="text-2xl font-bold text-green-600">{formatCurrency(totalAmount)}</p>
           </div>
         )}
@@ -183,16 +185,16 @@ export default function PaymentsPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <CreditCard className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No payments found</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('owner.noPaymentsFound')}</h3>
             <p className="text-muted-foreground text-center mb-4">
               {filters.periodMonth || filters.periodYear !== currentYear
-                ? 'No payments for the selected period'
-                : 'Start by recording your first payment'}
+                ? t('owner.noPaymentsForPeriod')
+                : t('owner.startRecordingPayments')}
             </p>
             <Button asChild>
               <Link href="/dashboard/payments/new">
                 <Plus className="mr-2 h-4 w-4" />
-                Record Payment
+                {t('owner.recordPayment')}
               </Link>
             </Button>
           </CardContent>
@@ -202,12 +204,12 @@ export default function PaymentsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Tenant</TableHead>
-                <TableHead>Property / Unit</TableHead>
-                <TableHead>Period</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Method</TableHead>
+                <TableHead>{t('common.date')}</TableHead>
+                <TableHead>{t('owner.tenant')}</TableHead>
+                <TableHead>{t('owner.propertyUnit')}</TableHead>
+                <TableHead>{t('owner.period')}</TableHead>
+                <TableHead>{t('common.amount')}</TableHead>
+                <TableHead>{t('owner.method')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -234,7 +236,7 @@ export default function PaymentsPage() {
                       <div>
                         <p className="font-medium">{payment.unit.property?.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          Unit {payment.unit.unitNumber}
+                          {t('owner.unit')} {payment.unit.unitNumber}
                         </p>
                       </div>
                     ) : (

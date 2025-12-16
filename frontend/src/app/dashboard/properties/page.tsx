@@ -23,8 +23,10 @@ import {
 } from '@/components/ui/dialog';
 import { Plus, MoreVertical, Building2, MapPin, Home, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 export default function PropertiesPage() {
+  const { t } = useLanguage();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteProperty, setDeleteProperty] = useState<Property | null>(null);
@@ -39,7 +41,7 @@ export default function PropertiesPage() {
       const data = await propertiesApi.getAll();
       setProperties(data);
     } catch (err) {
-      toast.error('Failed to load properties');
+      toast.error(t('owner.failedToLoadProperties'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -53,10 +55,10 @@ export default function PropertiesPage() {
     try {
       await propertiesApi.delete(deleteProperty.id);
       setProperties(properties.filter(p => p.id !== deleteProperty.id));
-      toast.success('Property deleted successfully');
+      toast.success(t('owner.propertyDeletedSuccess'));
       setDeleteProperty(null);
     } catch (err) {
-      toast.error('Failed to delete property');
+      toast.error(t('owner.failedToDeleteProperty'));
       console.error(err);
     } finally {
       setDeleting(false);
@@ -65,10 +67,10 @@ export default function PropertiesPage() {
 
   const getPropertyTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
-      apartment: 'Apartment',
-      house: 'House',
-      commercial: 'Commercial',
-      other: 'Other'
+      apartment: t('owner.apartment'),
+      house: t('owner.house'),
+      commercial: t('owner.commercial'),
+      other: t('owner.other')
     };
     return labels[type] || type;
   };
@@ -106,15 +108,15 @@ export default function PropertiesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Properties</h1>
+          <h1 className="text-3xl font-bold">{t('owner.properties')}</h1>
           <p className="text-muted-foreground">
-            Manage your rental properties
+            {t('owner.manageRentalProperties')}
           </p>
         </div>
         <Button asChild>
           <Link href="/dashboard/properties/new">
             <Plus className="mr-2 h-4 w-4" />
-            Add Property
+            {t('owner.addProperty')}
           </Link>
         </Button>
       </div>
@@ -123,14 +125,14 @@ export default function PropertiesPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No properties yet</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('owner.noPropertiesYet')}</h3>
             <p className="text-muted-foreground text-center mb-4">
-              Get started by adding your first property
+              {t('owner.getStartedAddProperty')}
             </p>
             <Button asChild>
               <Link href="/dashboard/properties/new">
                 <Plus className="mr-2 h-4 w-4" />
-                Add Property
+                {t('owner.addProperty')}
               </Link>
             </Button>
           </CardContent>
@@ -165,19 +167,19 @@ export default function PropertiesPage() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem asChild>
                         <Link href={`/dashboard/properties/${property.id}`}>
-                          View Details
+                          {t('owner.viewDetails')}
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link href={`/dashboard/properties/${property.id}/edit`}>
                           <Pencil className="mr-2 h-4 w-4" />
-                          Edit
+                          {t('common.edit')}
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link href={`/dashboard/properties/${property.id}/units`}>
                           <Home className="mr-2 h-4 w-4" />
-                          Manage Units
+                          {t('owner.manageUnits')}
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem
@@ -185,7 +187,7 @@ export default function PropertiesPage() {
                         onClick={() => setDeleteProperty(property)}
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
+                        {t('common.delete')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -199,11 +201,11 @@ export default function PropertiesPage() {
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-1">
                       <Home className="h-4 w-4 text-muted-foreground" />
-                      <span>{stats.total} units</span>
+                      <span>{stats.total} {t('owner.units')}</span>
                     </div>
                     <div className="flex gap-3">
-                      <span className="text-green-600">{stats.occupied} occupied</span>
-                      <span className="text-orange-600">{stats.vacant} vacant</span>
+                      <span className="text-green-600">{stats.occupied} {t('dashboard.occupied')}</span>
+                      <span className="text-orange-600">{stats.vacant} {t('dashboard.vacant')}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -217,9 +219,9 @@ export default function PropertiesPage() {
       <Dialog open={!!deleteProperty} onOpenChange={() => setDeleteProperty(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Property</DialogTitle>
+            <DialogTitle>{t('owner.deleteProperty')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{deleteProperty?.name}&quot;? This action cannot be undone and will also delete all associated units.
+              {t('owner.deletePropertyConfirm')} &quot;{deleteProperty?.name}&quot;? {t('owner.deletePropertyWarning')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -228,14 +230,14 @@ export default function PropertiesPage() {
               onClick={() => setDeleteProperty(null)}
               disabled={deleting}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={handleDelete}
               disabled={deleting}
             >
-              {deleting ? 'Deleting...' : 'Delete'}
+              {deleting ? t('owner.deleting') : t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

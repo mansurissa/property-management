@@ -18,13 +18,7 @@ import {
 } from '@/components/ui/select';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-
-const propertyTypes = [
-  { value: 'apartment', label: 'Apartment' },
-  { value: 'house', label: 'House' },
-  { value: 'commercial', label: 'Commercial' },
-  { value: 'other', label: 'Other' },
-];
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 const rwandaCities = [
   'Kigali',
@@ -40,6 +34,7 @@ const rwandaCities = [
 ];
 
 export default function NewPropertyPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<CreatePropertyData>({
@@ -50,21 +45,28 @@ export default function NewPropertyPage() {
     description: '',
   });
 
+  const propertyTypes = [
+    { value: 'apartment', label: t('owner.apartment') },
+    { value: 'house', label: t('owner.house') },
+    { value: 'commercial', label: t('owner.commercial') },
+    { value: 'other', label: t('owner.other') },
+  ];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.name || !formData.address) {
-      toast.error('Please fill in all required fields');
+      toast.error(t('owner.fillRequired'));
       return;
     }
 
     setLoading(true);
     try {
       await propertiesApi.create(formData);
-      toast.success('Property created successfully');
+      toast.success(t('owner.propertyCreatedSuccess'));
       router.push('/dashboard/properties');
     } catch (err) {
-      toast.error('Failed to create property');
+      toast.error(t('owner.failedToCreateProperty'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -80,27 +82,27 @@ export default function NewPropertyPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">Add Property</h1>
+          <h1 className="text-3xl font-bold">{t('owner.addProperty')}</h1>
           <p className="text-muted-foreground">
-            Create a new rental property
+            {t('owner.createNewProperty')}
           </p>
         </div>
       </div>
 
       <Card className="max-w-2xl">
         <CardHeader>
-          <CardTitle>Property Details</CardTitle>
+          <CardTitle>{t('owner.propertyDetails')}</CardTitle>
           <CardDescription>
-            Enter the details of your new property
+            {t('owner.enterPropertyDetails')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Property Name *</Label>
+              <Label htmlFor="name">{t('owner.propertyNameLabel')}</Label>
               <Input
                 id="name"
-                placeholder="e.g., Sunrise Apartments"
+                placeholder={t('owner.propertyNamePlaceholder')}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
@@ -108,13 +110,13 @@ export default function NewPropertyPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="type">Property Type</Label>
+              <Label htmlFor="type">{t('owner.propertyTypeLabel')}</Label>
               <Select
                 value={formData.type}
                 onValueChange={(value) => setFormData({ ...formData, type: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue placeholder={t('owner.selectType')} />
                 </SelectTrigger>
                 <SelectContent>
                   {propertyTypes.map((type) => (
@@ -127,10 +129,10 @@ export default function NewPropertyPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="address">Address *</Label>
+              <Label htmlFor="address">{t('owner.addressLabel')}</Label>
               <Input
                 id="address"
-                placeholder="e.g., KG 123 St, Kimihurura"
+                placeholder={t('owner.addressPlaceholder')}
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 required
@@ -138,13 +140,13 @@ export default function NewPropertyPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="city">City</Label>
+              <Label htmlFor="city">{t('owner.cityLabel')}</Label>
               <Select
                 value={formData.city}
                 onValueChange={(value) => setFormData({ ...formData, city: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select city" />
+                  <SelectValue placeholder={t('owner.selectCity')} />
                 </SelectTrigger>
                 <SelectContent>
                   {rwandaCities.map((city) => (
@@ -157,10 +159,10 @@ export default function NewPropertyPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t('owner.descriptionLabel')}</Label>
               <Textarea
                 id="description"
-                placeholder="Describe your property..."
+                placeholder={t('owner.descriptionPlaceholder')}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={4}
@@ -169,10 +171,10 @@ export default function NewPropertyPage() {
 
             <div className="flex gap-4 pt-4">
               <Button type="submit" disabled={loading}>
-                {loading ? 'Creating...' : 'Create Property'}
+                {loading ? t('owner.creating') : t('owner.createProperty')}
               </Button>
               <Button type="button" variant="outline" asChild>
-                <Link href="/dashboard/properties">Cancel</Link>
+                <Link href="/dashboard/properties">{t('common.cancel')}</Link>
               </Button>
             </div>
           </form>

@@ -20,58 +20,60 @@ import {
 } from 'lucide-react';
 import { getSession } from '@/lib/session';
 import DemoRequestModal from '@/components/DemoRequestModal';
-
-const features = [
-  {
-    icon: Building2,
-    title: 'Property Management',
-    description: 'Manage multiple properties and units from a single dashboard with ease.'
-  },
-  {
-    icon: Users,
-    title: 'Tenant Tracking',
-    description: 'Keep track of tenants, lease dates, and contact information effortlessly.'
-  },
-  {
-    icon: CreditCard,
-    title: 'Payment Recording',
-    description: 'Record rent payments via cash, MoMo, or bank transfer seamlessly.'
-  },
-  {
-    icon: Wrench,
-    title: 'Maintenance Tickets',
-    description: 'Track and manage maintenance requests from tenants in real-time.'
-  },
-  {
-    icon: BarChart3,
-    title: 'Dashboard Analytics',
-    description: 'View occupancy rates, revenue, and key metrics at a glance.'
-  },
-  {
-    icon: Bell,
-    title: 'Payment Reminders',
-    description: 'Send automated SMS & email reminders to tenants before rent is due.'
-  }
-];
-
-const benefits = [
-  'Free to get started',
-  'No credit card required',
-  'Unlimited properties',
-  'SMS & Email notifications',
-  '24/7 Support'
-];
-
-const stats = [
-  { value: '500+', label: 'Properties Managed' },
-  { value: '2,000+', label: 'Happy Tenants' },
-  { value: '99.9%', label: 'Uptime' },
-  { value: '24/7', label: 'Support' }
-];
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 export default function Home() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
+
+  const features = [
+    {
+      icon: Building2,
+      title: t('landing.propertyManagementTitle'),
+      description: t('landing.propertyManagementDesc')
+    },
+    {
+      icon: Users,
+      title: t('landing.tenantTrackingTitle'),
+      description: t('landing.tenantTrackingDesc')
+    },
+    {
+      icon: CreditCard,
+      title: t('landing.paymentRecordingTitle'),
+      description: t('landing.paymentRecordingDesc')
+    },
+    {
+      icon: Wrench,
+      title: t('landing.maintenanceTicketsTitle'),
+      description: t('landing.maintenanceTicketsDesc')
+    },
+    {
+      icon: BarChart3,
+      title: t('landing.dashboardAnalyticsTitle'),
+      description: t('landing.dashboardAnalyticsDesc')
+    },
+    {
+      icon: Bell,
+      title: t('landing.paymentRemindersTitle'),
+      description: t('landing.paymentRemindersDesc')
+    }
+  ];
+
+  const benefits = [
+    t('landing.freeToStart'),
+    t('landing.noCreditCard'),
+    t('landing.unlimitedProperties'),
+    t('landing.smsEmailNotifications'),
+    t('landing.support247')
+  ];
+
+  const stats = [
+    { value: '500+', label: t('landing.propertiesManaged') },
+    { value: '2,000+', label: t('landing.happyTenants') },
+    { value: '99.9%', label: t('landing.uptime') },
+    { value: '24/7', label: t('landing.support') }
+  ];
 
   useEffect(() => {
     const session = getSession();
