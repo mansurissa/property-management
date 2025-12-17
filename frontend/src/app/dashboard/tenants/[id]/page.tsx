@@ -36,8 +36,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Pencil, Users, Phone, Mail, Home, CreditCard, Calendar, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Pencil, Users, Phone, Mail, Home, CreditCard, Calendar, AlertTriangle, FileText, Upload } from 'lucide-react';
 import { toast } from 'sonner';
+import DocumentList from '@/components/DocumentList';
+import DocumentUpload from '@/components/DocumentUpload';
+import { Document } from '@/lib/api/documents';
 
 export default function TenantDetailsPage() {
   const params = useParams();
@@ -51,6 +54,8 @@ export default function TenantDetailsPage() {
   const [selectedUnit, setSelectedUnit] = useState<string>('');
   const [availableUnits, setAvailableUnits] = useState<Unit[]>([]);
   const [assigning, setAssigning] = useState(false);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [documentsRefreshKey, setDocumentsRefreshKey] = useState(0);
 
   useEffect(() => {
     if (params.id) {
@@ -306,6 +311,7 @@ export default function TenantDetailsPage() {
         <TabsList>
           <TabsTrigger value="info">Information</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
+          <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
 
         <TabsContent value="info" className="space-y-6">
@@ -437,7 +443,60 @@ export default function TenantDetailsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="documents">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Documents</CardTitle>
+                  <CardDescription>Lease agreements and other tenant documents</CardDescription>
+                </div>
+                <Button onClick={() => setShowUploadDialog(true)}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Document
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <DocumentList
+                key={documentsRefreshKey}
+                tenantId={tenant.id}
+                onDocumentDeleted={() => setDocumentsRefreshKey(prev => prev + 1)}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* Upload Document Dialog */}
+      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload Document</DialogTitle>
+            <DialogDescription>
+              Upload a lease agreement or other document for {tenant.firstName} {tenant.lastName}
+            </DialogDescription>
+          </DialogHeader>
+          <DocumentUpload
+            tenantId={tenant.id}
+            documentType="lease_agreement"
+            onUploadSuccess={() => {
+              setShowUploadDialog(false);
+              setDocumentsRefreshKey(prev => prev + 1);
+              toast.success('Document uploaded successfully');
+            }}
+            onUploadError={(error) => {
+              toast.error(error);
+            }}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowUploadDialog(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Assign Unit Dialog */}
       <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>

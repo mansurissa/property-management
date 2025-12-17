@@ -17,9 +17,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { documentsApi } from '@/lib/api/documents';
 
 export default function NewTenantPage() {
   const { t, locale } = useLanguage();
@@ -28,6 +29,7 @@ export default function NewTenantPage() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<string>('');
   const [availableUnits, setAvailableUnits] = useState<Unit[]>([]);
+  const [leaseAgreementFile, setLeaseAgreementFile] = useState<File | null>(null);
   const [formData, setFormData] = useState<CreateTenantData>({
     firstName: '',
     lastName: '',
@@ -76,7 +78,22 @@ export default function NewTenantPage() {
 
     setLoading(true);
     try {
-      await tenantsApi.create(formData);
+      const newTenant = await tenantsApi.create(formData);
+
+      // If there's a lease agreement file, upload it
+      if (leaseAgreementFile && newTenant.id) {
+        try {
+          await documentsApi.uploadTenantDocument(
+            newTenant.id,
+            leaseAgreementFile,
+            'lease_agreement'
+          );
+        } catch (docErr) {
+          console.error('Failed to upload lease agreement:', docErr);
+          toast.error('Tenant created but failed to upload lease agreement');
+        }
+      }
+
       toast.success(t('owner.tenantCreatedSuccess'));
       router.push('/dashboard/tenants');
     } catch (err) {
@@ -277,6 +294,36 @@ export default function NewTenantPage() {
                   onChange={(e) => setFormData({ ...formData, leaseEndDate: e.target.value })}
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="leaseAgreement">Lease Agreement (Optional)</Label>
+              <p className="text-sm text-muted-foreground">Upload lease agreement PDF, JPEG, or PNG (max 10MB)</p>
+              <div className="flex items-center gap-3">
+                <Input
+                  id="leaseAgreement"
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => setLeaseAgreementFile(e.target.files?.[0] || null)}
+                  className="cursor-pointer"
+                />
+                {leaseAgreementFile && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setLeaseAgreementFile(null)}
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+              {leaseAgreementFile && (
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Upload className="h-4 w-4" />
+                  {leaseAgreementFile.name} ({(leaseAgreementFile.size / 1024 / 1024).toFixed(2)} MB)
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

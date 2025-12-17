@@ -16,14 +16,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Upload } from 'lucide-react';
 import { toast } from 'sonner';
+import DocumentList from '@/components/DocumentList';
+import DocumentUpload from '@/components/DocumentUpload';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 export default function EditTenantPage() {
   const params = useParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [documentsRefreshKey, setDocumentsRefreshKey] = useState(0);
   const [formData, setFormData] = useState<UpdateTenantData>({
     firstName: '',
     lastName: '',
@@ -265,6 +277,34 @@ export default function EditTenantPage() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Documents</CardTitle>
+                <CardDescription>
+                  Manage lease agreements and other documents
+                </CardDescription>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowUploadDialog(true)}
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Upload Document
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <DocumentList
+              key={documentsRefreshKey}
+              tenantId={params.id as string}
+              onDocumentDeleted={() => setDocumentsRefreshKey(prev => prev + 1)}
+            />
+          </CardContent>
+        </Card>
+
         <div className="flex gap-4">
           <Button type="submit" disabled={saving}>
             {saving ? 'Saving...' : 'Save Changes'}
@@ -274,6 +314,35 @@ export default function EditTenantPage() {
           </Button>
         </div>
       </form>
+
+      {/* Upload Document Dialog */}
+      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload Document</DialogTitle>
+            <DialogDescription>
+              Upload a lease agreement or other document for this tenant
+            </DialogDescription>
+          </DialogHeader>
+          <DocumentUpload
+            tenantId={params.id as string}
+            documentType="lease_agreement"
+            onUploadSuccess={() => {
+              setShowUploadDialog(false);
+              setDocumentsRefreshKey(prev => prev + 1);
+              toast.success('Document uploaded successfully');
+            }}
+            onUploadError={(error) => {
+              toast.error(error);
+            }}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowUploadDialog(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
