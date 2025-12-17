@@ -3,9 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { tenantsApi, CreateTenantData } from '@/lib/api/tenants';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { tenantsApi } from '@/lib/api/tenants';
 import { propertiesApi, Property } from '@/lib/api/properties';
 import { Unit } from '@/lib/api/properties';
+import { tenantSchema, TenantFormData } from '@/lib/validations/tenant.schema';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -30,17 +33,27 @@ export default function NewTenantPage() {
   const [selectedProperty, setSelectedProperty] = useState<string>('');
   const [availableUnits, setAvailableUnits] = useState<Unit[]>([]);
   const [leaseAgreementFile, setLeaseAgreementFile] = useState<File | null>(null);
-  const [formData, setFormData] = useState<CreateTenantData>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    nationalId: '',
-    emergencyContact: '',
-    emergencyPhone: '',
-    unitId: undefined,
-    leaseStartDate: '',
-    leaseEndDate: '',
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+  } = useForm<TenantFormData>({
+    resolver: zodResolver(tenantSchema),
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      nationalId: '',
+      emergencyContact: '',
+      emergencyPhone: '',
+      unitId: '',
+      leaseStartDate: '',
+      leaseEndDate: '',
+    },
   });
 
   useEffect(() => {
@@ -52,11 +65,11 @@ export default function NewTenantPage() {
       const property = properties.find(p => p.id === selectedProperty);
       const vacantUnits = property?.units?.filter(u => u.status === 'vacant') || [];
       setAvailableUnits(vacantUnits);
-      setFormData(prev => ({ ...prev, unitId: undefined }));
+      setValue('unitId', '');
     } else {
       setAvailableUnits([]);
     }
-  }, [selectedProperty, properties]);
+  }, [selectedProperty, properties, setValue]);
 
   const loadProperties = async () => {
     try {
@@ -68,17 +81,10 @@ export default function NewTenantPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.firstName || !formData.lastName || !formData.phone) {
-      toast.error(t('owner.fillRequired'));
-      return;
-    }
-
+  const onSubmit = async (data: TenantFormData) => {
     setLoading(true);
     try {
-      const newTenant = await tenantsApi.create(formData);
+      const newTenant = await tenantsApi.create(data);
 
       // If there's a lease agreement file, upload it
       if (leaseAgreementFile && newTenant.id) {
@@ -128,7 +134,7 @@ export default function NewTenantPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>{t('owner.personalInformation')}</CardTitle>
@@ -143,20 +149,24 @@ export default function NewTenantPage() {
                 <Input
                   id="firstName"
                   placeholder={t('owner.firstNamePlaceholder')}
-                  value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  required
+                  {...register('firstName')}
+                  className={errors.firstName ? 'border-red-500' : ''}
                 />
+                {errors.firstName && (
+                  <p className="text-sm text-red-500">{errors.firstName.message}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName">{t('owner.lastNameLabel')}</Label>
                 <Input
                   id="lastName"
                   placeholder={t('owner.lastNamePlaceholder')}
-                  value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  required
+                  {...register('lastName')}
+                  className={errors.lastName ? 'border-red-500' : ''}
                 />
+                {errors.lastName && (
+                  <p className="text-sm text-red-500">{errors.lastName.message}</p>
+                )}
               </div>
             </div>
 
@@ -166,10 +176,12 @@ export default function NewTenantPage() {
                 <Input
                   id="phone"
                   placeholder={t('owner.phonePlaceholder')}
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  required
+                  {...register('phone')}
+                  className={errors.phone ? 'border-red-500' : ''}
                 />
+                {errors.phone && (
+                  <p className="text-sm text-red-500">{errors.phone.message}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">{t('owner.emailLabel')}</Label>
@@ -177,9 +189,12 @@ export default function NewTenantPage() {
                   id="email"
                   type="email"
                   placeholder={t('owner.emailPlaceholder')}
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  {...register('email')}
+                  className={errors.email ? 'border-red-500' : ''}
                 />
+                {errors.email && (
+                  <p className="text-sm text-red-500">{errors.email.message}</p>
+                )}
               </div>
             </div>
 
@@ -188,9 +203,12 @@ export default function NewTenantPage() {
               <Input
                 id="nationalId"
                 placeholder={t('owner.nationalIdPlaceholder')}
-                value={formData.nationalId}
-                onChange={(e) => setFormData({ ...formData, nationalId: e.target.value })}
+                {...register('nationalId')}
+                className={errors.nationalId ? 'border-red-500' : ''}
               />
+              {errors.nationalId && (
+                <p className="text-sm text-red-500">{errors.nationalId.message}</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -209,18 +227,24 @@ export default function NewTenantPage() {
                 <Input
                   id="emergencyContact"
                   placeholder={t('owner.contactNamePlaceholder')}
-                  value={formData.emergencyContact}
-                  onChange={(e) => setFormData({ ...formData, emergencyContact: e.target.value })}
+                  {...register('emergencyContact')}
+                  className={errors.emergencyContact ? 'border-red-500' : ''}
                 />
+                {errors.emergencyContact && (
+                  <p className="text-sm text-red-500">{errors.emergencyContact.message}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="emergencyPhone">{t('owner.contactPhone')}</Label>
                 <Input
                   id="emergencyPhone"
                   placeholder={t('owner.phonePlaceholder')}
-                  value={formData.emergencyPhone}
-                  onChange={(e) => setFormData({ ...formData, emergencyPhone: e.target.value })}
+                  {...register('emergencyPhone')}
+                  className={errors.emergencyPhone ? 'border-red-500' : ''}
                 />
+                {errors.emergencyPhone && (
+                  <p className="text-sm text-red-500">{errors.emergencyPhone.message}</p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -253,11 +277,11 @@ export default function NewTenantPage() {
               <div className="space-y-2">
                 <Label htmlFor="unit">{t('owner.unitLabel')}</Label>
                 <Select
-                  value={formData.unitId || ''}
-                  onValueChange={(value) => setFormData({ ...formData, unitId: value || undefined })}
+                  value={watch('unitId') || ''}
+                  onValueChange={(value) => setValue('unitId', value)}
                   disabled={!selectedProperty || availableUnits.length === 0}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={errors.unitId ? 'border-red-500' : ''}>
                     <SelectValue placeholder={
                       !selectedProperty ? t('owner.selectPropertyFirst') :
                       availableUnits.length === 0 ? t('owner.noVacantUnits') :
@@ -272,6 +296,9 @@ export default function NewTenantPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.unitId && (
+                  <p className="text-sm text-red-500">{errors.unitId.message}</p>
+                )}
               </div>
             </div>
 
@@ -281,18 +308,24 @@ export default function NewTenantPage() {
                 <Input
                   id="leaseStartDate"
                   type="date"
-                  value={formData.leaseStartDate}
-                  onChange={(e) => setFormData({ ...formData, leaseStartDate: e.target.value })}
+                  {...register('leaseStartDate')}
+                  className={errors.leaseStartDate ? 'border-red-500' : ''}
                 />
+                {errors.leaseStartDate && (
+                  <p className="text-sm text-red-500">{errors.leaseStartDate.message}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="leaseEndDate">{t('owner.leaseEndDate')}</Label>
                 <Input
                   id="leaseEndDate"
                   type="date"
-                  value={formData.leaseEndDate}
-                  onChange={(e) => setFormData({ ...formData, leaseEndDate: e.target.value })}
+                  {...register('leaseEndDate')}
+                  className={errors.leaseEndDate ? 'border-red-500' : ''}
                 />
+                {errors.leaseEndDate && (
+                  <p className="text-sm text-red-500">{errors.leaseEndDate.message}</p>
+                )}
               </div>
             </div>
 

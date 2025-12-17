@@ -36,14 +36,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, MoreVertical, Users, Pencil, Trash2, Phone, Mail, Home } from 'lucide-react';
+import { Plus, MoreVertical, Users, Pencil, Trash2, Phone, Mail, Home, Search, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { Input } from '@/components/ui/input';
+import { exportToExcel, formatCurrency as formatCurrencyForExport, formatDateForExport } from '@/lib/utils/export';
 
 export default function TenantsPage() {
   const { t, locale } = useLanguage();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [deleteTenant, setDeleteTenant] = useState<Tenant | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -103,6 +106,41 @@ export default function TenantsPage() {
     }).format(amount);
   };
 
+  // Filter tenants based on search query
+  const filteredTenants = tenants.filter((tenant) => {
+    const searchLower = searchQuery.toLowerCase();
+    return searchQuery === '' ||
+      tenant.firstName.toLowerCase().includes(searchLower) ||
+      tenant.lastName.toLowerCase().includes(searchLower) ||
+      tenant.email?.toLowerCase().includes(searchLower) ||
+      tenant.phone.toLowerCase().includes(searchLower) ||
+      tenant.unit?.unitNumber.toLowerCase().includes(searchLower) ||
+      tenant.unit?.property?.name.toLowerCase().includes(searchLower);
+  });
+
+  const handleExportToExcel = () => {
+    const exportData = filteredTenants.map(tenant => ({
+      'First Name': tenant.firstName,
+      'Last Name': tenant.lastName,
+      'Phone': tenant.phone,
+      'Email': tenant.email || '',
+      'National ID': tenant.nationalId || '',
+      'Property': tenant.unit?.property?.name || 'N/A',
+      'Unit': tenant.unit?.unitNumber || 'N/A',
+      'Monthly Rent': tenant.unit ? formatCurrencyForExport(tenant.unit.monthlyRent) : 'N/A',
+      'Lease Start': tenant.leaseStartDate ? formatDateForExport(tenant.leaseStartDate) : '',
+      'Lease End': tenant.leaseEndDate ? formatDateForExport(tenant.leaseEndDate) : '',
+      'Status': tenant.status,
+      'Emergency Contact': tenant.emergencyContact || '',
+      'Emergency Phone': tenant.emergencyPhone || ''
+    }));
+
+    const statusText = statusFilter !== 'all' ? `_${statusFilter}` : '';
+    const filename = `tenants${statusText}_${new Date().toISOString().split('T')[0]}`;
+    exportToExcel(exportData, filename, 'Tenants');
+    toast.success('Tenants exported to Excel successfully');
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -127,17 +165,34 @@ export default function TenantsPage() {
             {t('owner.manageTenants')}
           </p>
         </div>
-        <Button asChild>
-          <Link href="/dashboard/tenants/new">
-            <Plus className="mr-2 h-4 w-4" />
-            {t('owner.addTenant')}
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          {tenants.length > 0 && (
+            <Button variant="outline" onClick={handleExportToExcel}>
+              <Download className="mr-2 h-4 w-4" />
+              Export to Excel
+            </Button>
+          )}
+          <Button asChild>
+            <Link href="/dashboard/tenants/new">
+              <Plus className="mr-2 h-4 w-4" />
+              {t('owner.addTenant')}
+            </Link>
+          </Button>
+        </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search tenants by name, email, phone, or unit..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue placeholder={t('owner.filterByStatus')} />
           </SelectTrigger>
           <SelectContent>
@@ -165,6 +220,19 @@ export default function TenantsPage() {
             </Button>
           </CardContent>
         </Card>
+      ) : filteredTenants.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Search className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No tenants found</h3>
+            <p className="text-muted-foreground text-center mb-4">
+              Try adjusting your search or filter criteria
+            </p>
+            <Button variant="outline" onClick={() => { setSearchQuery(''); setStatusFilter('all'); }}>
+              Clear filters
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <Card>
           <Table>
@@ -179,7 +247,7 @@ export default function TenantsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tenants.map((tenant) => (
+              {filteredTenants.map((tenant) => (
                 <TableRow key={tenant.id}>
                   <TableCell>
                     <Link

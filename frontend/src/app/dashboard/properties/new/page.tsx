@@ -3,7 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { propertiesApi, CreatePropertyData } from '@/lib/api/properties';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { propertiesApi } from '@/lib/api/properties';
+import { propertySchema, PropertyFormData } from '@/lib/validations/property.schema';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -37,32 +40,36 @@ export default function NewPropertyPage() {
   const { t } = useLanguage();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<CreatePropertyData>({
-    name: '',
-    type: 'apartment',
-    address: '',
-    city: 'Kigali',
-    description: '',
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+  } = useForm<PropertyFormData>({
+    resolver: zodResolver(propertySchema),
+    defaultValues: {
+      name: '',
+      type: 'apartment',
+      address: '',
+      city: 'Kigali',
+      description: '',
+    },
   });
 
   const propertyTypes = [
     { value: 'apartment', label: t('owner.apartment') },
     { value: 'house', label: t('owner.house') },
     { value: 'commercial', label: t('owner.commercial') },
+    { value: 'land', label: 'Land' },
     { value: 'other', label: t('owner.other') },
   ];
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.name || !formData.address) {
-      toast.error(t('owner.fillRequired'));
-      return;
-    }
-
+  const onSubmit = async (data: PropertyFormData) => {
     setLoading(true);
     try {
-      await propertiesApi.create(formData);
+      await propertiesApi.create(data);
       toast.success(t('owner.propertyCreatedSuccess'));
       router.push('/dashboard/properties');
     } catch (err) {
@@ -97,25 +104,27 @@ export default function NewPropertyPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">{t('owner.propertyNameLabel')}</Label>
               <Input
                 id="name"
                 placeholder={t('owner.propertyNamePlaceholder')}
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
+                {...register('name')}
+                className={errors.name ? 'border-red-500' : ''}
               />
+              {errors.name && (
+                <p className="text-sm text-red-500">{errors.name.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="type">{t('owner.propertyTypeLabel')}</Label>
               <Select
-                value={formData.type}
-                onValueChange={(value) => setFormData({ ...formData, type: value })}
+                value={watch('type')}
+                onValueChange={(value) => setValue('type', value as PropertyFormData['type'])}
               >
-                <SelectTrigger>
+                <SelectTrigger className={errors.type ? 'border-red-500' : ''}>
                   <SelectValue placeholder={t('owner.selectType')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -126,6 +135,9 @@ export default function NewPropertyPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {errors.type && (
+                <p className="text-sm text-red-500">{errors.type.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -133,19 +145,21 @@ export default function NewPropertyPage() {
               <Input
                 id="address"
                 placeholder={t('owner.addressPlaceholder')}
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                required
+                {...register('address')}
+                className={errors.address ? 'border-red-500' : ''}
               />
+              {errors.address && (
+                <p className="text-sm text-red-500">{errors.address.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="city">{t('owner.cityLabel')}</Label>
               <Select
-                value={formData.city}
-                onValueChange={(value) => setFormData({ ...formData, city: value })}
+                value={watch('city')}
+                onValueChange={(value) => setValue('city', value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className={errors.city ? 'border-red-500' : ''}>
                   <SelectValue placeholder={t('owner.selectCity')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -156,6 +170,9 @@ export default function NewPropertyPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {errors.city && (
+                <p className="text-sm text-red-500">{errors.city.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -163,10 +180,13 @@ export default function NewPropertyPage() {
               <Textarea
                 id="description"
                 placeholder={t('owner.descriptionPlaceholder')}
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                {...register('description')}
                 rows={4}
+                className={errors.description ? 'border-red-500' : ''}
               />
+              {errors.description && (
+                <p className="text-sm text-red-500">{errors.description.message}</p>
+              )}
             </div>
 
             <div className="flex gap-4 pt-4">

@@ -24,9 +24,10 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus, CreditCard, Calendar } from 'lucide-react';
+import { Plus, CreditCard, Calendar, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { exportToExcel, formatCurrency as formatCurrencyForExport, formatDateForExport } from '@/lib/utils/export';
 
 export default function PaymentsPage() {
   const { t, locale } = useLanguage();
@@ -95,6 +96,21 @@ export default function PaymentsPage() {
     label: getMonthName(i + 1)
   }));
 
+  const handleExportToExcel = () => {
+    const exportData = payments.map(payment => ({
+      'Tenant': payment.tenant ? `${payment.tenant.firstName} ${payment.tenant.lastName}` : 'N/A',
+      'Amount': formatCurrencyForExport(parseFloat(payment.amount.toString())),
+      'Payment Date': formatDateForExport(payment.paymentDate),
+      'Period': `${getMonthName(payment.periodMonth)} ${payment.periodYear}`,
+      'Payment Method': payment.paymentMethod,
+      'Notes': payment.notes || ''
+    }));
+
+    const filename = `payments_${filters.periodYear}${filters.periodMonth ? `_${getMonthName(filters.periodMonth)}` : ''}_${new Date().toISOString().split('T')[0]}`;
+    exportToExcel(exportData, filename, 'Payments');
+    toast.success('Payments exported to Excel successfully');
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -119,12 +135,20 @@ export default function PaymentsPage() {
             {t('owner.viewRecordPayments')}
           </p>
         </div>
-        <Button asChild>
-          <Link href="/dashboard/payments/new">
-            <Plus className="mr-2 h-4 w-4" />
-            {t('owner.recordPayment')}
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          {payments.length > 0 && (
+            <Button variant="outline" onClick={handleExportToExcel}>
+              <Download className="mr-2 h-4 w-4" />
+              Export to Excel
+            </Button>
+          )}
+          <Button asChild>
+            <Link href="/dashboard/payments/new">
+              <Plus className="mr-2 h-4 w-4" />
+              {t('owner.recordPayment')}
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-end gap-4">

@@ -21,9 +21,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus, MoreVertical, Building2, MapPin, Home, Pencil, Trash2 } from 'lucide-react';
+import { Plus, MoreVertical, Building2, MapPin, Home, Pencil, Trash2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function PropertiesPage() {
   const { t } = useLanguage();
@@ -31,6 +39,8 @@ export default function PropertiesPage() {
   const [loading, setLoading] = useState(true);
   const [deleteProperty, setDeleteProperty] = useState<Property | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
 
   useEffect(() => {
     loadProperties();
@@ -85,6 +95,18 @@ export default function PropertiesPage() {
     return { total, occupied, vacant };
   };
 
+  // Filter properties based on search query and type filter
+  const filteredProperties = properties.filter((property) => {
+    const matchesSearch = searchQuery === '' ||
+      property.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      property.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      property.city.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesType = typeFilter === 'all' || property.type === typeFilter;
+
+    return matchesSearch && matchesType;
+  });
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -121,6 +143,33 @@ export default function PropertiesPage() {
         </Button>
       </div>
 
+      {properties.length > 0 && (
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search properties by name, address, or city..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectValue placeholder="Filter by type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="apartment">{t('owner.apartment')}</SelectItem>
+              <SelectItem value="house">{t('owner.house')}</SelectItem>
+              <SelectItem value="commercial">{t('owner.commercial')}</SelectItem>
+              <SelectItem value="land">Land</SelectItem>
+              <SelectItem value="other">{t('owner.other')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {properties.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
@@ -137,9 +186,22 @@ export default function PropertiesPage() {
             </Button>
           </CardContent>
         </Card>
+      ) : filteredProperties.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Search className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No properties found</h3>
+            <p className="text-muted-foreground text-center mb-4">
+              Try adjusting your search or filter criteria
+            </p>
+            <Button variant="outline" onClick={() => { setSearchQuery(''); setTypeFilter('all'); }}>
+              Clear filters
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {properties.map((property) => {
+          {filteredProperties.map((property) => {
             const stats = getUnitStats(property);
             return (
               <Card key={property.id} className="hover:shadow-md transition-shadow">
