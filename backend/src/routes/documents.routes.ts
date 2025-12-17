@@ -252,4 +252,143 @@ router.post('/property/:propertyId', upload.single('file'), async (req: AuthRequ
   }
 });
 
+// PATCH /documents/:id/status - Update document status
+router.patch('/:id/status', async (req: AuthRequest, res: Response) => {
+  try {
+    const { Document } = require('../database/models');
+    const { status, signatureMethod, notes } = req.body;
+
+    // Find document
+    const document = await Document.findOne({
+      where: { id: req.params.id, userId: req.user!.userId }
+    });
+
+    if (!document) {
+      return sendNotFound(res, 'Document');
+    }
+
+    // Validate status
+    const validStatuses = ['draft', 'pending_signature', 'signed', 'rejected'];
+    if (status && !validStatuses.includes(status)) {
+      return sendError(res, 'Invalid status');
+    }
+
+    // Update document
+    const updateData: any = {};
+    if (status) {
+      updateData.status = status;
+
+      // If requesting signature, set timestamp
+      if (status === 'pending_signature') {
+        updateData.requestedSignatureAt = new Date();
+      }
+
+      // If signing, set signed data
+      if (status === 'signed') {
+        updateData.signedBy = req.user!.userId;
+        updateData.signedAt = new Date();
+        if (signatureMethod) {
+          updateData.signatureMethod = signatureMethod;
+        }
+      }
+    }
+
+    if (notes !== undefined) {
+      updateData.notes = notes;
+    }
+
+    await document.update(updateData);
+
+    return sendSuccess(res, document, 'Document status updated successfully');
+  } catch (error) {
+    return sendServerError(res, error as Error, 'Failed to update document status');
+  }
+});
+
+// POST /documents/:id/request-signature - Request tenant signature
+router.post('/:id/request-signature', async (req: AuthRequest, res: Response) => {
+  try {
+    const { Document, Tenant, User } = require('../database/models');
+
+    // Find document
+    const document = await Document.findOne({
+      where: { id: req.params.id, userId: req.user!.userId },
+      include: [
+        {
+          model: Tenant,
+          as: 'tenant',
+          include: [{ model: User, as: 'user' }]
+        }
+      ]
+    });
+
+    if (!document) {
+      return sendNotFound(res, 'Document');
+    }
+
+    // Only lease agreements can request signature
+    if (document.documentType !== 'lease_agreement') {
+      return sendError(res, 'Only lease agreements can request signatures');
+    }
+
+    // Update document status
+    await document.update({
+      status: 'pending_signature',
+      requestedSignatureAt: new Date()
+    });
+
+    // TODO: Send email/SMS notification to tenant
+    // This would integrate with your notification service
+
+    return sendSuccess(res, document, 'Signature request sent to tenant');
+  } catch (error) {
+    return sendServerError(res, error as Error, 'Failed to request signature');
+  }
+});
+
+// POST /documents/:id/sign - Tenant signs document
+router.post('/:id/sign', async (req: AuthRequest, res: Response) => {
+  try {
+    const { Document, Tenant } = require('../database/models');
+    const { signatureMethod, signedDocument } = req.body;
+
+    // Find document that the tenant has access to
+    const tenant = await Tenant.findOne({
+      where: { userId: req.user!.userId }
+    });
+
+    if (!tenant) {
+      return sendError(res, 'You must be a tenant to sign documents');
+    }
+
+    const document = await Document.findOne({
+      where: {
+        id: req.params.id,
+        entityType: 'tenant',
+        entityId: tenant.id
+      }
+    });
+
+    if (!document) {
+      return sendNotFound(res, 'Document');
+    }
+
+    if (document.status === 'signed') {
+      return sendError(res, 'Document is already signed');
+    }
+
+    // Update document
+    await document.update({
+      status: 'signed',
+      signedBy: req.user!.userId,
+      signedAt: new Date(),
+      signatureMethod: signatureMethod || 'typed'
+    });
+
+    return sendSuccess(res, document, 'Document signed successfully');
+  } catch (error) {
+    return sendServerError(res, error as Error, 'Failed to sign document');
+  }
+});
+
 export default router;

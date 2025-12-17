@@ -61,6 +61,36 @@ module.exports = (sequelize, DataTypes) => {
     description: {
       type: DataTypes.TEXT,
       allowNull: true
+    },
+    status: {
+      type: DataTypes.ENUM('draft', 'pending_signature', 'signed', 'rejected'),
+      allowNull: false,
+      defaultValue: 'draft'
+    },
+    signedBy: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'Users',
+        key: 'id'
+      }
+    },
+    signedAt: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
+    requestedSignatureAt: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
+    signatureMethod: {
+      type: DataTypes.ENUM('uploaded', 'physical', 'typed', 'none'),
+      allowNull: true,
+      defaultValue: 'none'
+    },
+    notes: {
+      type: DataTypes.TEXT,
+      allowNull: true
     }
   }, {
     tableName: 'Documents',
