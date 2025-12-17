@@ -11,7 +11,15 @@ import {
   sendDeleted,
   sendConflict
 } from '../utils/response.utils';
+import {
+  createTenantValidation,
+  updateTenantValidation,
+  assignTenantToUnitValidation
+} from '../middleware/validators/tenant.validator';
+import { validateRequest } from '../middleware/validation.middleware';
+import { verifyTenantOwnership } from '../middleware/ownership.middleware';
 const { Tenant, Unit, Property, Payment } = require('../database/models');
+const db = require('../database/models');
 
 const router = Router();
 

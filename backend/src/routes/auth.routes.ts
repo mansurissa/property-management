@@ -1,7 +1,14 @@
 import { Router, Request, Response } from 'express';
 import { login, createUser, forgotPassword, resetPassword } from '../services/auth.service';
-import { validatePassword, validateEmail } from '../utils/validation.utils';
 import { verifyRefreshToken, generateTokenPair } from '../utils/jwt.utils';
+import { authLimiter, passwordResetLimiter } from '../middleware/rate-limit.middleware';
+import {
+  registerValidation,
+  loginValidation,
+  forgotPasswordValidation,
+  resetPasswordValidation
+} from '../middleware/validators/auth.validator';
+import { validateRequest } from '../middleware/validation.middleware';
 
 const db = require('../database/models');
 const { User } = db;
@@ -9,53 +16,16 @@ const { User } = db;
 const router = Router();
 
 // Register endpoint
-router.post('/register', async (req: Request, res: Response) => {
+router.post('/register', authLimiter, validateRequest(registerValidation), async (req: Request, res: Response) => {
   try {
-    const { firstName, lastName, name, email, password, phone, role } = req.body;
+    const { firstName, lastName, email, password, phone, role } = req.body;
 
-    // Validate input
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email and password are required'
-      });
-    }
-
-    // Validate email format
-    if (!validateEmail(email)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide a valid email address'
-      });
-    }
-
-    // Validate password strength
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.isValid) {
-      return res.status(400).json({
-        success: false,
-        message: passwordValidation.errors[0],
-        errors: passwordValidation.errors,
-        passwordStrength: passwordValidation.strength
-      });
-    }
-
-    // Handle name - either use firstName/lastName directly or split from name
-    let userFirstName = firstName;
-    let userLastName = lastName;
-
-    if (!firstName && name) {
-      const nameParts = name.trim().split(' ');
-      userFirstName = nameParts[0] || '';
-      userLastName = nameParts.slice(1).join(' ') || '';
-    }
-
-    // Create user
+    // Create user (validation already done by middleware)
     const result = await createUser({
       email,
       password,
-      firstName: userFirstName,
-      lastName: userLastName,
+      firstName,
+      lastName,
       phone,
       role: role || 'owner'
     });
@@ -78,19 +48,11 @@ router.post('/register', async (req: Request, res: Response) => {
 });
 
 // Login endpoint
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', authLimiter, validateRequest(loginValidation), async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    // Validate input
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email and password are required'
-      });
-    }
-
-    // Attempt login
+    // Attempt login (validation already done by middleware)
     const result = await login({ email, password });
 
     if (!result.success) {
@@ -108,17 +70,9 @@ router.post('/login', async (req: Request, res: Response) => {
 });
 
 // Forgot Password endpoint
-router.post('/forgot-password', async (req: Request, res: Response) => {
+router.post('/forgot-password', passwordResetLimiter, validateRequest(forgotPasswordValidation), async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
-
-    // Validate input
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email is required'
-      });
-    }
 
     const result = await forgotPassword(email);
 
@@ -134,28 +88,9 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
 });
 
 // Reset Password endpoint
-router.post('/reset-password', async (req: Request, res: Response) => {
+router.post('/reset-password', passwordResetLimiter, validateRequest(resetPasswordValidation), async (req: Request, res: Response) => {
   try {
     const { token, password } = req.body;
-
-    // Validate input
-    if (!token || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Token and password are required'
-      });
-    }
-
-    // Validate password strength
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.isValid) {
-      return res.status(400).json({
-        success: false,
-        message: passwordValidation.errors[0],
-        errors: passwordValidation.errors,
-        passwordStrength: passwordValidation.strength
-      });
-    }
 
     const result = await resetPassword(token, password);
 

@@ -5,11 +5,32 @@ import helmet from 'helmet';
 
 import fs from 'fs';
 import router from './routes';
+import { globalLimiter } from './middleware/rate-limit.middleware';
 
 const app = express();
 
-// CORS must come before other middleware
-app.use(cors());
+// CORS configuration with restricted origins
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
+  : ['http://localhost:3000', 'http://localhost:5173'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, Postman, curl)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`🚫 CORS blocked request from origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 
 // Security headers - configured to work with CORS
 app.use(helmet({
@@ -51,6 +72,9 @@ app.get('/health', (_req, res) => {
     environment: process.env.NODE_ENV || 'development'
   });
 });
+
+// Apply rate limiting to all API routes
+app.use('/api/v1', globalLimiter);
 
 // Routes
 app.use('/api/v1', router);
